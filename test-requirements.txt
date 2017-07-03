@@ -1,0 +1,24 @@
+# The order of packages is significant, because pip processes them in the order
+# of appearance. Changing the order has an impact on the overall integration
+# process, which may cause wedges in the gate later.
+# Order matters to the pip dependency resolver, so sorting this file
+# changes how packages are installed.  New dependencies should be
+# added in alphabetical order, however, some dependencies may need to
+# be installed in a specific order.
+#
+# Hacking should appear first in case something else depends on pep8
+hacking!=0.13.0,<0.14,>=0.12.0 # Apache-2.0
+#
+coverage>=4.0,!=4.4  # Apache-2.0
+django-nose>=1.4.4 # BSD
+mock>=2.0 # BSD
+mox3>=0.7.0,!=0.19.0  # Apache-2.0
+nodeenv>=0.9.4  # BSD
+nose # LGPL
+nose-exclude # LGPL
+nosehtmloutput>=0.0.3 # Apache-2.0
+nosexcover # BSD
+openstack.nose-plugin>=0.7 # Apache-2.0
+reno>=1.8.0,!=2.3.1  # Apache-2.0
+sphinx>=1.6.2  # BSD
+testtools>=1.4.0 # MIT

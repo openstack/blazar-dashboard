@@ -1,0 +1,7 @@
+features:
+  - |
+    The following features are currently supported:
+        - Show a list of leases
+        - Show details of a lease
+        - Update a lease
+        - Delete lease(s)
