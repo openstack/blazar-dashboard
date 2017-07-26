@@ -26,6 +26,14 @@ import pytz
 from blazar_dashboard import api
 
 
+class CreateLease(tables.LinkAction):
+    name = "create"
+    verbose_name = _("Create Lease")
+    url = "horizon:project:leases:create"
+    classes = ("ajax-modal",)
+    icon = "plus"
+
+
 class UpdateLease(tables.LinkAction):
     name = "update"
     verbose_name = _("Update Lease")
@@ -83,5 +91,5 @@ class LeasesTable(tables.DataTable):
     class Meta(object):
         name = "leases"
         verbose_name = _("Leases")
-        table_actions = (DeleteLease, )
+        table_actions = (CreateLease, DeleteLease, )
         row_actions = (UpdateLease, DeleteLease, )

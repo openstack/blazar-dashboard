@@ -47,6 +47,16 @@ class DetailView(tabs.TabView):
     template_name = 'project/leases/detail.html'
 
 
+class CreateView(forms.ModalFormView):
+    form_class = project_forms.CreateForm
+    template_name = 'project/leases/create.html'
+    success_url = reverse_lazy('horizon:project:leases:index')
+    modal_id = "create_lease_modal"
+    modal_header = _("Create Lease")
+    submit_label = _("Create Lease")
+    submit_url = reverse_lazy('horizon:project:leases:create')
+
+
 class UpdateView(forms.ModalFormView):
     form_class = project_forms.UpdateForm
     template_name = 'project/leases/update.html'

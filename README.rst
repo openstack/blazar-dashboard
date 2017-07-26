@@ -11,17 +11,12 @@ Horizon plugin for the Blazar Reservation Service for OpenStack
 Features
 --------
 
-The following features are currently supported:
-
-* Show a list of leases
-* Show details of a lease
-* Update a lease
-* Delete lease(s)
+See doc/source/index.rst
 
 Enabling in DevStack
 --------------------
 
-* Not yet supported
+Not yet supported
 
 Manual Installation
 -------------------
