@@ -1,9 +1,10 @@
 {% load i18n sizeformat %}
+
 <div class="detail">
   <div class="info detail">
     <h4>{% trans "Lease" %}</h4>
     <hr class="header_rule">
-    <dl>
+    <dl class="dl-horizontal">
       <dt>{% trans "Name" %}</dt>
       <dd>{{ lease.name|default:_("None") }}</dd>
       <dt>{% trans "Id" %}</dt>
@@ -26,7 +27,7 @@
   <div class="info detail">
     <h4>{% trans "Events" %}</h4>
     <hr class="header_rule">
-    <dl>
+    <dl class="dl-horizontal">
     {% for event in lease.events %}
       <dt>{{ event.event_type }}</dt>
       <dd>
@@ -43,22 +44,19 @@
 
   <div class="info detail">
     <h4>{% trans "Reservations" %}</h4>
-    <hr class="header_rule">
-    <dl>
     {% for reservation in lease.reservations %}
-      <dt>{{ reservation.resource_type }}</dt>
-      <dd>
-        <ul>
-          <li><em>{% trans "Id:" %}</em>&nbsp;{{ reservation.id|default:_("None") }}
-          <li><em>{% trans "Status:" %}</em>&nbsp;{{ reservation.status|replace_underscores|lower|capfirst }}</li>
-          <li><em>{% trans "Resource Id:" %}</em>&nbsp;{{ reservation.resource_id }}</li>
-          <li><em>{% trans "Created at:" %}</em>&nbsp;{{ reservation.created_at|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</li>
-          <li><em>{% trans "Updated at:" %}</em>&nbsp;{{ reservation.updated_at|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</li>
-        </ul>
-      </dd>
-      {% empty %}
-      <dt>{% trans "No reservations defined." %}</dt>
+      <hr class="header_rule">
+      <dl class="dl-horizontal">
+        {% for key, value in reservation.items %}
+          {% if 'ted_at' in key %}
+            <dt>{{ key }}</dt>
+            <dd>{{ value|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
+          {% else %}
+            <dt>{{ key }}</dt>
+            <dd>{{ value }}</dd>
+          {% endif %}
+        {% endfor %}
+      </dl>
     {% endfor %}
-    </dl>
   </div>
 </div>
