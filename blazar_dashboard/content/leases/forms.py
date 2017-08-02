@@ -45,6 +45,18 @@ class UpdateForm(forms.SelfHandlingForm):
             attrs={'placeholder': _('Valid suffix are d/h/m (e.g. +1h)')}),
         required=False)
 
+    def __init__(self, request, *args, **kwargs):
+        super(UpdateForm, self).__init__(request, *args, **kwargs)
+        for reservation in kwargs['initial']['lease'].reservations:
+            if reservation['resource_type'] == 'virtual:instance':
+                # Hide the start/end_time because they cannot be updated if at
+                # least one virtual:instance reservation is included.
+                # TODO(hiro-kobayashi) remove this part if virtual:instance
+                # reservation gets to support update of the start/end_time.
+                del self.fields['start_time']
+                del self.fields['end_time']
+                return
+
     def handle(self, request, data):
         lease_id = data.get('lease_id')
 
