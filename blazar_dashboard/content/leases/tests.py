@@ -133,17 +133,40 @@ class LeasesTests(test.TestCase):
     def test_create_lease_instance_reservation(self):
         start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
         end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        dummy_lease = {}
+        api.client.lease_create(
+            IsA(http.HttpRequest),
+            'lease-1',
+            start_date.strftime('%Y-%m-%d %H:%M'),
+            end_date.strftime('%Y-%m-%d %H:%M'),
+            [
+                {
+                    'resource_type': 'virtual:instance',
+                    'amount': 3,
+                    'vcpus': 2,
+                    'memory_mb': 4096,
+                    'disk_gb': 128,
+                    'affinity': False
+                }
+            ],
+            []
+        ).AndReturn(dummy_lease)
+        self.mox.ReplayAll()
         form_data = {
             'name': 'lease-1',
             'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
             'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
             'resource_type': 'instance',
+            'amount': 3,
+            'vcpus': 2,
+            'memory_mb': 4096,
+            'disk_gb': 128
         }
 
         res = self.client.post(CREATE_URL, form_data)
-        self.assertTemplateUsed(res, CREATE_TEMPLATE)
-        self.assertFormErrors(res, 1)
-        self.assertContains(res, 'not yet supported')
+        self.assertNoFormErrors(res)
+        self.assertMessageCount(success=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)
 
     @test.create_stubs({api.client: ('lease_create', )})
     def test_create_lease_client_error(self):
