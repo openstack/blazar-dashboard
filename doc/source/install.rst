@@ -39,8 +39,8 @@ Install Blazar dashboard with all dependencies in your virtual environment::
 
 And enable it in Horizon::
 
-    ln -s ../blazar-dashboard/blazar_dashboard/enabled/_90_project_reservations_panelgroup.py openstack_dashboard/local/enabled
-    ln -s ../blazar-dashboard/blazar_dashboard/enabled/_91_project_reservations_leasess_panel.py openstack_dashboard/local/enabled
+    ln -s /path/to/blazar-dashboard/blazar_dashboard/enabled/_90_project_reservations_panelgroup.py openstack_dashboard/local/enabled
+    ln -s /path/to/blazar-dashboard/blazar_dashboard/enabled/_91_project_reservations_leases_panel.py openstack_dashboard/local/enabled
 
 Start horizon and it runs with the newly enabled Blazar dashboard.
 
