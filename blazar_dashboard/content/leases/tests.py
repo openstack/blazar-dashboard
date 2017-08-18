@@ -10,9 +10,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from datetime import datetime
+
 from django.core.urlresolvers import reverse
 from django import http
 from mox3.mox import IsA
+import pytz
 
 from blazar_dashboard import api
 from blazar_dashboard.test import helpers as test
@@ -24,6 +27,8 @@ INDEX_TEMPLATE = 'project/leases/index.html'
 INDEX_URL = reverse('horizon:project:leases:index')
 DETAIL_TEMPLATE = 'project/leases/detail.html'
 DETAIL_URL_BASE = 'horizon:project:leases:detail'
+CREATE_URL = reverse('horizon:project:leases:create')
+CREATE_TEMPLATE = 'project/leases/create.html'
 UPDATE_URL_BASE = 'horizon:project:leases:update'
 UPDATE_TEMPLATE = 'project/leases/update.html'
 
@@ -86,6 +91,94 @@ class LeasesTests(test.TestCase):
         self.assertTemplateNotUsed(res, DETAIL_TEMPLATE)
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({api.client: ('lease_create', )})
+    def test_create_lease_host_reservation(self):
+        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
+        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        new_lease = self.leases.get(name='lease-1')
+        api.client.lease_create(
+            IsA(http.HttpRequest),
+            'lease-1',
+            start_date.strftime('%Y-%m-%d %H:%M'),
+            end_date.strftime('%Y-%m-%d %H:%M'),
+            [
+                {
+                    'min': 1,
+                    'max': 1,
+                    'hypervisor_properties': '[">=", "$vcpus", "2"]',
+                    'resource_properties': '',
+                    'resource_type': 'physical:host',
+                }
+            ],
+            []
+        ).AndReturn(new_lease)
+        self.mox.ReplayAll()
+        form_data = {
+            'name': 'lease-1',
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
+            'resource_type': 'host',
+            'min_hosts': 1,
+            'max_hosts': 1,
+            'hypervisor_properties': '[">=", "$vcpus", "2"]'
+        }
+
+        res = self.client.post(CREATE_URL, form_data)
+        self.assertNoFormErrors(res)
+        self.assertMessageCount(success=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({api.client: ('lease_create', )})
+    def test_create_lease_instance_reservation(self):
+        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
+        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        form_data = {
+            'name': 'lease-1',
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
+            'resource_type': 'instance',
+        }
+
+        res = self.client.post(CREATE_URL, form_data)
+        self.assertTemplateUsed(res, CREATE_TEMPLATE)
+        self.assertFormErrors(res, 1)
+        self.assertContains(res, 'not yet supported')
+
+    @test.create_stubs({api.client: ('lease_create', )})
+    def test_create_lease_client_error(self):
+        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
+        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        api.client.lease_create(
+            IsA(http.HttpRequest),
+            'lease-1',
+            start_date.strftime('%Y-%m-%d %H:%M'),
+            end_date.strftime('%Y-%m-%d %H:%M'),
+            [
+                {
+                    'min': 1,
+                    'max': 1,
+                    'hypervisor_properties': '',
+                    'resource_properties': '',
+                    'resource_type': 'physical:host',
+                }
+            ],
+            []
+        ).AndRaise(self.exceptions.blazar)
+        self.mox.ReplayAll()
+        form_data = {
+            'name': 'lease-1',
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
+            'resource_type': 'host',
+            'min_hosts': 1,
+            'max_hosts': 1,
+        }
+
+        res = self.client.post(CREATE_URL, form_data)
+        self.assertTemplateUsed(res, CREATE_TEMPLATE)
+        self.assertNoFormErrors(res)
+        self.assertContains(res, 'An error occurred while creating')
 
     @test.create_stubs({api.client: ('lease_get', 'lease_update')})
     def test_update_lease(self):
