@@ -56,7 +56,7 @@ class CreateForm(forms.SelfHandlingForm):
         required=True,
         choices=(
             ('host', _('Physical Host')),
-            ('instance', _('Virtual Instance (Not yet supported in GUI)'))
+            ('instance', _('Virtual Instance'))
         ),
         widget=forms.ThemableSelectWidget(attrs={
             'class': 'switchable',
@@ -108,6 +108,52 @@ class CreateForm(forms.SelfHandlingForm):
             'placeholder': 'e.g. ["==", "$extra_key", "extra_value"]'})
     )
 
+    # Fields for instance reservation
+    amount = forms.IntegerField(
+        label=_('Instance Count'),
+        required=False,
+        help_text=_('Enter the number of instances to reserve.'),
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-instance': _('Instance Count')})
+    )
+    vcpus = forms.IntegerField(
+        label=_('Number of VCPUs'),
+        required=False,
+        help_text=_('Enter the number of VCPUs per instance.'),
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-instance': _('Number of VCPUs')})
+    )
+    memory_mb = forms.IntegerField(
+        label=_('RAM (MB)'),
+        required=False,
+        help_text=_('Enter the size of RAM (MB) per instance'),
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-instance': _('RAM (MB)')})
+    )
+    disk_gb = forms.IntegerField(
+        label=_('Root Disk (GB)'),
+        required=False,
+        help_text=_('Enter the root disk size (GB) per instance'),
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-instance': _('Root Disk (GB)')})
+    )
+
     def handle(self, request, data):
         if data['resource_type'] == 'host':
             reservations = [
@@ -121,8 +167,16 @@ class CreateForm(forms.SelfHandlingForm):
                 }
             ]
         elif data['resource_type'] == 'instance':
-            raise forms.ValidationError('Virtual instance is not yet '
-                                        'supported in GUI')
+            reservations = [
+                {
+                    'resource_type': 'virtual:instance',
+                    'amount': data['amount'],
+                    'vcpus': data['vcpus'],
+                    'memory_mb': data['memory_mb'],
+                    'disk_gb': data['disk_gb'],
+                    'affinity': False
+                }
+            ]
 
         events = []
 
@@ -160,10 +214,6 @@ class CreateForm(forms.SelfHandlingForm):
         else:
             cleaned_data['end_date'] = (cleaned_data['start_date']
                                         + datetime.timedelta(days=1))
-
-        if cleaned_data['resource_type'] == 'instance':
-            raise forms.ValidationError('Resource type "virtual instance" is '
-                                        'not yet supported in GUI')
 
 
 class UpdateForm(forms.SelfHandlingForm):
