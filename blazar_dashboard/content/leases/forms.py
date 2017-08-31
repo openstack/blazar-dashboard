@@ -15,6 +15,7 @@
 
 import datetime
 import logging
+import re
 
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
@@ -283,9 +284,23 @@ class UpdateForm(forms.SelfHandlingForm):
     def clean(self):
         cleaned_data = super(UpdateForm, self).clean()
 
-        lease_name = cleaned_data.get("lease_name")
-        start_time = cleaned_data.get("start_time")
-        end_time = cleaned_data.get("end_time")
+        lease_name = cleaned_data.get("lease_name", None)
+        start_time = cleaned_data.get("start_time", None)
+        end_time = cleaned_data.get("end_time", None)
+
+        if start_time:
+            valid = re.match('^[+-]\d+[dhm]$', start_time)
+            if not valid:
+                raise forms.ValidationError("The start/end time must be "
+                                            "a form of +/- number d/h/m. "
+                                            "(e.g. +1h)")
+
+        if end_time:
+            valid = re.match('^[+-]\d+[dhm]$', end_time)
+            if not valid:
+                raise forms.ValidationError("The start/end time must be "
+                                            "a form of +/- number d/h/m. "
+                                            "(e.g. +1h)")
 
         if not (lease_name or start_time or end_time):
             raise forms.ValidationError("Nothing to update.")
