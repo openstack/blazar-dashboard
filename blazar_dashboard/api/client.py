@@ -39,6 +39,16 @@ class Lease(base.APIDictWrapper):
         super(Lease, self).__init__(apiresource)
 
 
+class Host(base.APIDictWrapper):
+    """Represents one Blazar host."""
+
+    _attrs = ['id', 'hypervisor_hostname', 'hypervisor_type', 'vcpus',
+              'cpu_info', 'memory_mb', 'local_gb']
+
+    def __init__(self, apiresource):
+        super(Host, self).__init__(apiresource)
+
+
 @memoized
 def blazarclient(request):
     try:
@@ -82,3 +92,9 @@ def lease_update(request, lease_id, **kwargs):
 def lease_delete(request, lease_id):
     """Delete a lease."""
     blazarclient(request).lease.delete(lease_id)
+
+
+def host_list(request):
+    """List hosts."""
+    hosts = blazarclient(request).host.list()
+    return [Host(h) for h in hosts]

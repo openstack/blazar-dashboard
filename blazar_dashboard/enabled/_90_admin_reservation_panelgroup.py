@@ -10,22 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test import helpers
+from django.utils.translation import ugettext_lazy as _
 
-from blazar_dashboard.test.test_data import utils
-
-
-def create_stubs(stubs_to_create={}):
-    return helpers.create_stubs(stubs_to_create)
-
-
-class TestCase(helpers.TestCase):
-    def _setup_test_data(self):
-        super(TestCase, self)._setup_test_data()
-        utils.load_test_data(self)
-
-
-class BaseAdminViewTests(helpers.BaseAdminViewTests):
-    def _setup_test_data(self):
-        super(BaseAdminViewTests, self)._setup_test_data()
-        utils.load_test_data(self)
+# The slug of the panel group to be added to HORIZON_CONFIG. Required.
+PANEL_GROUP = 'reservation'
+# The display name of the PANEL_GROUP. Required.
+PANEL_GROUP_NAME = _('Reservation')
+# The slug of the dashboard the PANEL_GROUP associated with. Required.
+PANEL_GROUP_DASHBOARD = 'admin'
