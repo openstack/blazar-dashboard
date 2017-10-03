@@ -42,11 +42,23 @@ class Lease(base.APIDictWrapper):
 class Host(base.APIDictWrapper):
     """Represents one Blazar host."""
 
-    _attrs = ['id', 'hypervisor_hostname', 'hypervisor_type', 'vcpus',
-              'cpu_info', 'memory_mb', 'local_gb']
+    _attrs = ['id', 'hypervisor_hostname', 'hypervisor_type',
+              'hypervisor_version', 'vcpus', 'cpu_info', 'memory_mb',
+              'local_gb', 'status', 'created_at', 'updated_at',
+              'service_name', 'trust_id']
 
     def __init__(self, apiresource):
         super(Host, self).__init__(apiresource)
+
+    def cpu_info_dict(self):
+        return eval(getattr(self, 'cpu_info', ""))
+
+    def extra_capabilities(self):
+        excaps = {}
+        for k, v in self._apidict.items():
+            if k not in self._attrs:
+                excaps[k] = v
+        return excaps
 
 
 @memoized
@@ -98,3 +110,9 @@ def host_list(request):
     """List hosts."""
     hosts = blazarclient(request).host.list()
     return [Host(h) for h in hosts]
+
+
+def host_get(request, host_id):
+    """Get a host."""
+    host = blazarclient(request).host.get(host_id)
+    return Host(host)

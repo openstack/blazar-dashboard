@@ -146,7 +146,8 @@ host_sample1 = {
     "hypervisor_version": 2005000,
     "local_gb": 128,
     "id": "1",
-    "trust_id": "dummy"
+    "trust_id": "dummy",
+    "ex1": "dummy"
 }
 
 host_sample2 = {
@@ -162,7 +163,8 @@ host_sample2 = {
     "hypervisor_version": 2005000,
     "local_gb": 128,
     "id": "2",
-    "trust_id": "dummy"
+    "trust_id": "dummy",
+    "ex2": "dummy"
 }
 
 

@@ -1,3 +1,6 @@
+# Copyright 2014 Intel Corporation
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -10,30 +13,31 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
-from horizon import tables
 from horizon import tabs
 
-from blazar_dashboard import api
-from blazar_dashboard.content.hosts import tables as project_tables
-from blazar_dashboard.content.hosts import tabs as project_tabs
+from blazar_dashboard.api import client
 
 
-class IndexView(tables.DataTableView):
-    table_class = project_tables.HostsTable
-    template_name = 'admin/hosts/index.html'
+class OverviewTab(tabs.Tab):
+    name = _("Overview")
+    slug = "overview"
+    template_name = "admin/hosts/_detail_overview.html"
 
-    def get_data(self):
+    def get_context_data(self, request):
+        host_id = self.tab_group.kwargs['host_id']
         try:
-            hosts = api.client.host_list(self.request)
+            host = client.host_get(self.request, host_id)
         except Exception:
-            hosts = []
-            msg = _('Unable to retrieve host information.')
-            exceptions.handle(self.request, msg)
-        return hosts
+            redirect = reverse('horizon:admin:hosts:index')
+            msg = _('Unable to retrieve host details.')
+            exceptions.handle(request, msg, redirect=redirect)
+
+        return {'host': host}
 
 
-class DetailView(tabs.TabView):
-    tab_group_class = project_tabs.HostDetailTabs
-    template_name = 'admin/hosts/detail.html'
+class HostDetailTabs(tabs.TabGroup):
+    slug = "host_details"
+    tabs = (OverviewTab,)

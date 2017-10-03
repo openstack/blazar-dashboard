@@ -22,6 +22,8 @@ LOG = logging.getLogger(__name__)
 
 INDEX_TEMPLATE = 'admin/hosts/index.html'
 INDEX_URL = reverse('horizon:admin:hosts:index')
+DETAIL_TEMPLATE = 'admin/hosts/detail.html'
+DETAIL_URL_BASE = 'horizon:admin:hosts:detail'
 
 
 class HostsTests(test.BaseAdminViewTests):
@@ -57,3 +59,26 @@ class HostsTests(test.BaseAdminViewTests):
         res = self.client.get(INDEX_URL)
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertMessageCount(res, error=1)
+
+    @test.create_stubs({api.client: ('host_get',)})
+    def test_host_detail(self):
+        host = self.hosts.get(hypervisor_hostname='compute-1')
+        api.client.host_get(IsA(http.HttpRequest),
+                            host['id']).AndReturn(host)
+        self.mox.ReplayAll()
+
+        res = self.client.get(reverse(DETAIL_URL_BASE, args=[host['id']]))
+        self.assertTemplateUsed(res, DETAIL_TEMPLATE)
+        self.assertContains(res, 'compute-1')
+        self.assertContains(res, 'ex1')
+
+    @test.create_stubs({api.client: ('host_get',)})
+    def test_host_detail_error(self):
+        api.client.host_get(IsA(http.HttpRequest),
+                            'invalid').AndRaise(self.exceptions.blazar)
+        self.mox.ReplayAll()
+
+        res = self.client.get(reverse(DETAIL_URL_BASE, args=['invalid']))
+        self.assertTemplateNotUsed(res, DETAIL_TEMPLATE)
+        self.assertMessageCount(error=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)
