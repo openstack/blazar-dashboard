@@ -116,3 +116,8 @@ def host_get(request, host_id):
     """Get a host."""
     host = blazarclient(request).host.get(host_id)
     return Host(host)
+
+
+def host_delete(request, host_id):
+    """Delete a host."""
+    blazarclient(request).host.delete(host_id)
