@@ -168,6 +168,15 @@ host_sample2 = {
 }
 
 
+class DummyNovaHost(object):
+    def __init__(self, host_name, service):
+        self.host_name = host_name
+        self.service = service
+
+novahost_sample1 = DummyNovaHost('compute-1', 'compute')
+novahost_sample2 = DummyNovaHost('compute-2', 'compute')
+
+
 def data(TEST):
     TEST.leases = utils.TestDataContainer()
 
@@ -178,3 +187,8 @@ def data(TEST):
 
     TEST.hosts.add(api.client.Host(host_sample1))
     TEST.hosts.add(api.client.Host(host_sample2))
+
+    TEST.novahosts = utils.TestDataContainer()
+
+    TEST.novahosts.add(novahost_sample1)
+    TEST.novahosts.add(novahost_sample2)

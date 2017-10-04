@@ -18,6 +18,14 @@ from horizon.templatetags import sizeformat
 from blazar_dashboard import api
 
 
+class CreateHosts(tables.LinkAction):
+    name = "create"
+    verbose_name = _("Create Hosts")
+    url = "horizon:admin:hosts:create"
+    classes = ("ajax-modal",)
+    icon = "plus"
+
+
 class DeleteHost(tables.DeleteAction):
     name = "delete"
     data_type_singular = _("Host")
@@ -57,5 +65,5 @@ class HostsTable(tables.DataTable):
     class Meta(object):
         name = "hosts"
         verbose_name = _("Hosts")
-        table_actions = (DeleteHost,)
+        table_actions = (CreateHosts, DeleteHost,)
         row_actions = (DeleteHost,)
