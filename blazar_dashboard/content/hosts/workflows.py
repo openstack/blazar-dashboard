@@ -67,11 +67,32 @@ class SelectHostsAction(workflows.MembershipAction):
 
 
 class AddExtraCapsAction(workflows.Action):
-    # TODO(hiro-kobayashi): Implement this class
+    extra_caps = forms.CharField(
+        label=_("Extra Capabilities"),
+        required=False,
+        help_text=_('Enter extra capabilities of hosts in JSON'),
+        widget=forms.Textarea(
+            attrs={'rows': 5}),
+        max_length=511)
+
     class Meta(object):
         name = _("Extra Capabilities")
-        help_text = _("Not supported yet.")
         slug = "add_extra_caps"
+
+    def clean(self):
+        cleaned_data = super(AddExtraCapsAction, self).clean()
+        extra_caps = cleaned_data.get('extra_caps')
+
+        if extra_caps:
+            try:
+                extra_caps = eval(extra_caps)
+                cleaned_data['extra_caps'] = extra_caps
+            except (SyntaxError, NameError):
+                raise forms.ValidationError(
+                    _('Extra capabilities must written in JSON')
+                )
+
+        return cleaned_data
 
 
 class SelectHostsStep(workflows.UpdateMembersStep):
@@ -92,10 +113,14 @@ class SelectHostsStep(workflows.UpdateMembersStep):
 
 
 class AddExtraCapsStep(workflows.Step):
-    # TODO(hiro-kobayashi): Implement this class
     action_class = AddExtraCapsAction
     help_text = _("Add extra capabilities")
     show_roles = False
+    contributes = ("extra_caps",)
+
+    def contribute(self, data, context):
+        context['extra_caps'] = data.get('extra_caps')
+        return context
 
 
 class CreateHostsWorkflow(workflows.Workflow):
@@ -108,7 +133,11 @@ class CreateHostsWorkflow(workflows.Workflow):
     def handle(self, request, context):
         try:
             for name in context['names']:
-                blazar_api.client.host_create(request, name=name)
+                if context['extra_caps']:
+                    blazar_api.client.host_create(request, name=name,
+                                                  **context['extra_caps'])
+                else:
+                    blazar_api.client.host_create(request, name=name)
                 messages.success(request, _('Host %s was successfully '
                                             'created.') % name)
         except Exception:

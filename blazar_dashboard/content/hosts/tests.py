@@ -109,6 +109,31 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertMessageCount(success=(len(host_names) + 1))
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
+    @test.create_stubs({blazar_api.client: ('host_list', 'host_create',),
+                        api.nova: ('host_list',)})
+    def test_create_hosts_with_extra_caps(self):
+        blazar_api.client.host_list(IsA(http.HttpRequest)
+                                    ).AndReturn([])
+        api.nova.host_list(IsA(http.HttpRequest)
+                           ).AndReturn(self.novahosts.list())
+        host_names = [h.host_name for h in self.novahosts.list()]
+        for host_name in host_names:
+            blazar_api.client.host_create(
+                IsA(http.HttpRequest),
+                name=host_name,
+                extracap="strong"
+            ).AndReturn([])
+        self.mox.ReplayAll()
+        form_data = {
+            'select_hosts_role_member': host_names,
+            'extra_caps': '{"extracap": "strong"}'
+        }
+
+        res = self.client.post(CREATE_URL, form_data)
+        self.assertNoFormErrors(res)
+        self.assertMessageCount(success=(len(host_names) + 1))
+        self.assertRedirectsNoFollow(res, INDEX_URL)
+
     @test.create_stubs({blazar_api.client: ('host_list', 'host_delete')})
     def test_delete_host(self):
         hosts = self.hosts.list()
