@@ -12,7 +12,12 @@
 
 from __future__ import absolute_import
 
+from collections import OrderedDict
 import logging
+
+from django.db import connections
+from django.utils.translation import ugettext_lazy as _
+import six
 
 from horizon import exceptions
 from horizon.utils.memoized import memoized
@@ -22,6 +27,21 @@ from blazarclient import client as blazar_client
 
 
 LOG = logging.getLogger(__name__)
+LEASE_DATE_FORMAT = "%Y-%m-%d %H:%M"
+
+PRETTY_TYPE_NAMES = OrderedDict([
+    ('compute', _('Compute Node (default)')),
+    ('storage', _('Storage')),
+    ('gpu_k80', _('GPU (K80)')),
+    ('gpu_m40', _('GPU (M40)')),
+    ('gpu_p100', _('GPU (P100)')),
+    ('compute_ib', _('Infiniband Support')),
+    ('storage_hierarchy', _('Storage Hierarchy')),
+    ('fpga', _('FPGA')),
+    ('lowpower_xeon', _('Low power Xeon')),
+    ('atom', _('Atom')),
+    ('arm64', _('ARM64')),
+])
 
 
 class Lease(base.APIDictWrapper):
@@ -130,3 +150,149 @@ def host_update(request, host_id, values):
 def host_delete(request, host_id):
     """Delete a host."""
     blazarclient(request).host.delete(host_id)
+
+
+def dictfetchall(cursor):
+    "Returns all rows from a cursor as a dict"
+    desc = cursor.description
+    return [
+        dict(zip([col[0] for col in desc], row))
+        for row in cursor.fetchall()
+    ]
+
+def compute_host_available(request, start_date, end_date):
+    """
+    Return the number of compute hosts available for reservation for the entire
+    specified date range.
+    """
+    start_date_str = start_date.strftime('%Y-%m-%d %H:%M')
+    end_date_str = end_date.strftime('%Y-%m-%d %H:%M')
+    cursor = connections['blazar'].cursor()
+    cursor.execute("""
+        select count(*) as available
+        from computehosts ch
+        where ch.id not in (
+            select ch.id
+            from computehosts ch
+            join computehost_allocations cha on cha.`compute_host_id` = ch.`id`
+            join reservations r on r.id = cha.`reservation_id`
+            join leases l on l.`id` = r.`lease_id`
+            where
+                r.deleted="0" and
+                ch.deleted="0" and
+                ((l.`start_date` > %s and l.`start_date` < %s)
+                or (l.`end_date` > %s and l.`end_date` < %s)
+                or (l.`start_date` < %s and l.`end_date` > %s))
+        )
+        """, [start_date_str, end_date_str, start_date_str, end_date_str, start_date_str, end_date_str])
+    count = cursor.fetchone()[0]
+    return count
+
+def node_in_lease(request, lease_id):
+    sql = '''\
+    SELECT
+        c.hypervisor_hostname
+    FROM
+        computehost_allocations AS ca
+        JOIN computehosts AS c ON c.id = ca.compute_host_id
+        JOIN reservations AS r ON r.id = ca.reservation_id
+        JOIN leases AS l ON l.id = r.lease_id
+    WHERE
+        l.id = %s
+        AND ca.deleted = '0'
+    '''
+    sql_args = (lease_id,)
+
+    cursor = connections['blazar'].cursor()
+    cursor.execute(sql, sql_args)
+    hypervisor_hostnames = dictfetchall(cursor)
+    return hypervisor_hostnames
+
+def compute_host_list(request, node_types=False):
+    """Return a list of compute hosts available for reservation"""
+    cursor = connections['blazar'].cursor()
+    cursor.execute('SELECT hypervisor_hostname, vcpus, memory_mb, local_gb, cpu_info, hypervisor_type FROM computehosts WHERE deleted="0"')
+    compute_hosts = dictfetchall(cursor)
+
+    if node_types:
+        node_types = node_type_map(cursor)
+        for ch in compute_hosts:
+            ch['node_type'] = node_types.get(ch['hypervisor_hostname'], 'unknown')
+
+    return compute_hosts
+
+def node_type_map(cursor=None):
+    if cursor is None:
+        cursor = connections['blazar'].cursor()
+    sql = '''\
+    SELECT ch.hypervisor_hostname AS id, nt.node_type
+    FROM blazar.computehosts AS ch
+    INNER JOIN (
+        SELECT ex.computehost_id AS id, ex.capability_value AS node_type
+        FROM blazar.computehost_extra_capabilities AS ex
+        INNER JOIN (
+            SELECT id, MAX(created_at)
+            FROM blazar.computehost_extra_capabilities
+            WHERE capability_name = 'node_type' AND deleted = '0'
+            GROUP BY computehost_id
+        ) AS exl
+        ON ex.id = exl.id
+    ) AS nt
+    ON ch.id = nt.id;
+    '''
+    cursor.execute(sql)
+    node_types = dict(cursor.fetchall())
+    return node_types
+
+def reservation_calendar(request):
+    """Return a list of all scheduled leases."""
+    cursor = connections['blazar'].cursor()
+    sql = '''\
+    SELECT
+        l.name,
+        l.project_id,
+        l.start_date,
+        l.end_date,
+        r.id,
+        r.status,
+        c.hypervisor_hostname
+    FROM
+        computehost_allocations cha
+        JOIN computehosts c ON c.id = cha.compute_host_id
+        JOIN reservations r ON r.id = cha.reservation_id
+        JOIN leases l ON l.id = r.lease_id
+    WHERE
+        r.deleted = '0'
+        AND c.deleted = '0'
+        AND cha.deleted = '0'
+    ORDER BY
+        start_date,
+        project_id;
+    '''
+    cursor.execute(sql)
+    host_reservations = dictfetchall(cursor)
+
+    return host_reservations
+
+def available_nodetypes():
+    cursor = connections['blazar'].cursor()
+    sql = '''\
+    SELECT DISTINCT
+        capability_value
+    FROM
+        computehost_extra_capabilities
+    WHERE
+        capability_name = 'node_type'
+        AND deleted = '0'
+    '''
+    cursor.execute(sql)
+    available = {row[0] for row in cursor.fetchall()}
+    choices = [(k, six.text_type(v)) for k, v in PRETTY_TYPE_NAMES.items() if k in available]
+
+    unprettyable = available - set(PRETTY_TYPE_NAMES)
+    if unprettyable:
+        unprettyable = sorted(unprettyable)
+        choices.extend((k, k) for k in unprettyable)
+        LOG.debug('New node types without pretty name(s): {}'.format(unprettyable))
+
+    return choices

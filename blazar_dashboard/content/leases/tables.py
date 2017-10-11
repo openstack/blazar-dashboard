@@ -30,8 +30,13 @@ class CreateLease(tables.LinkAction):
     name = "create"
     verbose_name = _("Create Lease")
     url = "horizon:project:leases:create"
-    classes = ("ajax-modal",)
+    classes = ("btn-create", "btn-primary", "ajax-modal", )
     icon = "plus"
+    ajax = True
+
+    def __init__(self, attrs=None, **kwargs):
+        kwargs['preempt'] = True
+        super(CreateLease, self).__init__(attrs, **kwargs)
 
 
 class UpdateLease(tables.LinkAction):
@@ -45,6 +50,15 @@ class UpdateLease(tables.LinkAction):
                 replace(tzinfo=pytz.utc) > datetime.now(pytz.utc):
             return True
         return False
+
+
+class ViewLeaseCalendar(tables.LinkAction):
+    ## TODO(nicktimko) move calendar to a panel
+    name = "calendar"
+    verbose_name = _("Lease Calendar")
+    url = "horizon:project:leases:calendar"
+    classes = ("btn-default", )
+    icon = "calendar"
 
 
 class DeleteLease(tables.DeleteAction):
@@ -92,5 +106,5 @@ class LeasesTable(tables.DataTable):
     class Meta(object):
         name = "leases"
         verbose_name = _("Leases")
-        table_actions = (CreateLease, DeleteLease, )
+        table_actions = (ViewLeaseCalendar, CreateLease, DeleteLease, )
         row_actions = (UpdateLease, DeleteLease, )

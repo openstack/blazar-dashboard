@@ -14,6 +14,7 @@
 #    under the License.
 
 import datetime
+import json
 import logging
 import re
 
@@ -21,9 +22,10 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import forms
 from horizon import messages
-from pytz import timezone
+import pytz
 
 from blazar_dashboard import api
+from . import widgets
 
 LOG = logging.getLogger(__name__)
 
@@ -54,14 +56,15 @@ class CreateForm(forms.SelfHandlingForm):
     )
     resource_type = forms.ChoiceField(
         label=_("Resource Type"),
-        required=True,
+        # required=True,
         choices=(
             ('host', _('Physical Host')),
-            ('instance', _('Virtual Instance'))
+            # ('instance', _('Virtual Instance'))
         ),
-        widget=forms.ThemableSelectWidget(attrs={
-            'class': 'switchable',
-            'data-slug': 'source'}))
+        # widget=forms.ThemableSelectWidget(attrs={
+        #     'class': 'switchable',
+        #     'data-slug': 'source'})
+    )
 
     # Fields for host reservation
     min_hosts = forms.IntegerField(
@@ -70,10 +73,10 @@ class CreateForm(forms.SelfHandlingForm):
         help_text=_('Enter the minimum number of hosts to reserve.'),
         min_value=1,
         initial=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Minimum Number of Hosts')})
+        # widget=forms.NumberInput(attrs={
+        #     'class': 'switched',
+        #     'data-switch-on': 'source',
+        #     'data-source-host': _('Minimum Number of Hosts')})
     )
     max_hosts = forms.IntegerField(
         label=_('Maximum Number of Hosts'),
@@ -81,67 +84,25 @@ class CreateForm(forms.SelfHandlingForm):
         help_text=_('Enter the maximum number of hosts to reserve.'),
         min_value=1,
         initial=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Maximum Number of Hosts')})
+        # widget=forms.NumberInput(attrs={
+        #     'class': 'switched',
+        #     'data-switch-on': 'source',
+        #     'data-source-host': _('Maximum Number of Hosts')})
     )
-    hypervisor_properties = forms.CharField(
-        label=_("Hypervisor Properties"),
+    specific_node = forms.CharField(
+        label=_('Reserve Specific Node'),
+        help_text=_('To reserve a specific node, enter the node UUID here. '
+                    'If provided, overrides node type.'),
         required=False,
-        help_text=_('Enter properties of a hypervisor to reserve.'),
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Hypervisor Properties'),
-            'placeholder': 'e.g. [">=", "$vcpus", "2"]'})
     )
-
-    # Fields for instance reservation
-    amount = forms.IntegerField(
-        label=_('Instance Count'),
-        required=False,
-        help_text=_('Enter the number of instances to reserve.'),
-        min_value=1,
-        initial=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-instance': _('Instance Count')})
-    )
-    vcpus = forms.IntegerField(
-        label=_('Number of VCPUs'),
-        required=False,
-        help_text=_('Enter the number of VCPUs per instance.'),
-        min_value=1,
-        initial=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-instance': _('Number of VCPUs')})
-    )
-    memory_mb = forms.IntegerField(
-        label=_('RAM (MB)'),
-        required=False,
-        help_text=_('Enter the size of RAM (MB) per instance'),
-        min_value=1,
-        initial=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-instance': _('RAM (MB)')})
-    )
-    disk_gb = forms.IntegerField(
-        label=_('Root Disk (GB)'),
-        required=False,
-        help_text=_('Enter the root disk size (GB) per instance'),
-        min_value=0,
-        initial=0,
-        widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-instance': _('Root Disk (GB)')})
+    node_type = forms.ChoiceField(
+        label=_('Node Type to Reserve'),
+        help_text=_('Choose standard compute nodes or heterogenous nodes with '
+                    'either more storage space, varied storage devices, GPUs, '
+                    'Infiniband, or other specialized hardware. Different '
+                    'hardware is available on different sites.'),
+        # choices=api.client.available_nodetypes,
+        choices=[('apple', 'Apple'), ('banana', 'Banana'), ('cherry', 'Cherry')],
     )
     affinity = forms.ChoiceField(
         label=_("Affinity Rule"),
@@ -175,12 +136,15 @@ class CreateForm(forms.SelfHandlingForm):
                     'resource_type': 'physical:host',
                     'min': data['min_hosts'],
                     'max': data['max_hosts'],
-                    'hypervisor_properties': (data['hypervisor_properties'] or
-                                              ''),
-                    'resource_properties': data['resource_properties'] or ''
+                    # 'hypervisor_properties': (data['hypervisor_properties']
+                    #                           or ''),
+                    # 'resource_properties': data['resource_properties'] or ''
+                    'hypervisor_properties': '',
+                    'resource_properties': '',
                 }
             ]
         elif data['resource_type'] == 'instance':
+            raise forms.ValidationError("Invalid resource type.")
             reservations = [
                 {
                     'resource_type': 'virtual:instance',
@@ -193,14 +157,27 @@ class CreateForm(forms.SelfHandlingForm):
                 }
             ]
 
+        resource_properties = None
+
+        if data['specific_node']:
+            resource_properties = ['=', '$uid', data['specific_node']]
+        elif data['node_type']:
+            resource_properties = ['=', '$node_type', data['node_type']]
+
+        if resource_properties is not None:
+            resource_properties = json.dumps(resource_properties)
+            # reservations[0]['resource_properties'] = resource_properties
+
         events = []
 
         try:
-            api.client.lease_create(
+            lease = api.client.lease_create(
                 request, data['name'],
                 data['start_date'].strftime('%Y-%m-%d %H:%M'),
                 data['end_date'].strftime('%Y-%m-%d %H:%M'),
                 reservations, events)
+            # store created_lease_id in session for redirect in view
+            request.session['created_lease_id'] = lease.id
             messages.success(request, _('Lease %s was successfully '
                                         'created.') % data['name'])
             return True
@@ -212,23 +189,49 @@ class CreateForm(forms.SelfHandlingForm):
 
     def clean(self):
         cleaned_data = super(CreateForm, self).clean()
-        local = timezone(self.request.session.get(
+        local = pytz.timezone(self.request.session.get(
             'django_timezone',
             self.request.COOKIES.get('django_timezone', 'UTC')))
 
         if cleaned_data['start_date']:
             cleaned_data['start_date'] = local.localize(
                 cleaned_data['start_date'].replace(tzinfo=None)
-            ).astimezone(timezone('UTC'))
+            ).astimezone(pytz.timezone('UTC'))
         else:
-            cleaned_data['start_date'] = datetime.datetime.utcnow()
+            cleaned_data['start_date'] = (datetime.datetime.utcnow()
+                                          + datetime.timedelta(minutes=1))
+
         if cleaned_data['end_date']:
             cleaned_data['end_date'] = local.localize(
                 cleaned_data['end_date'].replace(tzinfo=None)
-            ).astimezone(timezone('UTC'))
+            ).astimezone(pytz.timezone('UTC'))
         else:
             cleaned_data['end_date'] = (cleaned_data['start_date'] +
                                         datetime.timedelta(days=1))
+
+        if cleaned_data['start_date'] < datetime.datetime.utcnow():
+            raise forms.ValidationError("Start date must be in the future")
+
+        if cleaned_data['start_date'] >= cleaned_data['end_date']:
+            raise forms.ValidationError("Start date must be before end")
+
+        # precheck for name conflicts
+        leases = api.client.lease_list(self.request)
+        if cleaned_data['name'] in {lease['name'] for lease in leases}:
+            raise forms.ValidationError("A lease with this name already exists.")
+
+        # precheck for host availability
+        num_hosts = api.client.compute_host_available(self.request,
+                                                      cleaned_data['start_date'],
+                                                      cleaned_data['end_date'])
+        if cleaned_data['min_hosts'] > num_hosts:
+            raise forms.ValidationError(_(
+                "Not enough hosts are available for this reservation (minimum "
+                "%s requested; %s available). Try adjusting the number of "
+                "hosts requested or the date range for the reservation.")
+                % (cleaned_data['min_hosts'], num_hosts))
+
+        return cleaned_data
 
 
 class UpdateForm(forms.SelfHandlingForm):
@@ -240,15 +243,13 @@ class UpdateForm(forms.SelfHandlingForm):
         label=_('Lease ID'), widget=forms.widgets.HiddenInput, required=True)
     lease_name = forms.CharField(
         label=_('Lease name'), widget=forms.TextInput(), required=False)
-    start_time = forms.CharField(
-        label=_('Start time'),
-        widget=forms.TextInput(
-            attrs={'placeholder': _('Valid suffix are d/h/m (e.g. +1h)')}),
+    prolong_for = forms.CharField(
+        label=_('Prolong for'),
+        widget=widgets.TimespanWidget(),
         required=False)
-    end_time = forms.CharField(
-        label=_('End time'),
-        widget=forms.TextInput(
-            attrs={'placeholder': _('Valid suffix are d/h/m (e.g. +1h)')}),
+    reduce_by = forms.CharField(
+        label=_('Reduce by'),
+        widget=widgets.TimespanWidget(),
         required=False)
     reservations = forms.CharField(
         label=_("Reservation values to update"),
@@ -266,18 +267,17 @@ class UpdateForm(forms.SelfHandlingForm):
         max_length=511,
         required=False)
 
-    def __init__(self, request, *args, **kwargs):
-        super(UpdateForm, self).__init__(request, *args, **kwargs)
-        for reservation in kwargs['initial']['lease'].reservations:
-            if reservation['resource_type'] == 'virtual:instance':
-                # Hide the start/end_time because they cannot be updated if at
-                # least one virtual:instance reservation is included.
-                # TODO(hiro-kobayashi) remove this part if virtual:instance
-                # reservation gets to support update of the start/end_time.
-                del self.fields['start_time']
-                del self.fields['end_time']
-                del self.fields['reservations']
-                return
+    # def __init__(self, request, *args, **kwargs):
+    #     super(UpdateForm, self).__init__(request, *args, **kwargs)
+    #     for reservation in kwargs['initial']['lease'].reservations:
+    #         if reservation['resource_type'] == 'virtual:instance':
+    #             # Hide the start/end_time because they cannot be updated if at
+    #             # least one virtual:instance reservation is included.
+    #             # TODO(hiro-kobayashi) remove this part if virtual:instance
+    #             # reservation gets to support update of the start/end_time.
+    #             del self.fields['start_time']
+    #             del self.fields['end_time']
+    #             return
 
     def handle(self, request, data):
         lease_id = data.get('lease_id')
@@ -288,18 +288,37 @@ class UpdateForm(forms.SelfHandlingForm):
         if lease_name:
             fields['name'] = lease_name
 
-        start_time = data.get('start_time', None)
-        end_time = data.get('end_time', None)
-        if start_time:
-            if start_time[0] == '+':
-                fields['defer_by'] = start_time[1:]
-            elif start_time[0] == '-':
-                fields['advance_by'] = start_time[1:]
-        if end_time:
-            if end_time[0] == '+':
-                fields['prolong_for'] = end_time[1:]
-            elif end_time[0] == '-':
-                fields['reduce_by'] = end_time[1:]
+        # TODO(nicktimko): Create a better widget/use more appropriate
+        # controls because prolonging/reducing aren't really independent
+        # choices. Also expose other fields that lease.update supports.
+        # the TimespanWidget emits strings of the form "<int>s"
+        try:
+            prolong = float((data.get('prolong_for') or '0s').rstrip('s'))
+            reduce = float((data.get('reduce_by') or '0s').rstrip('s'))
+        except ValueError as e:
+            logger.error('Error updating lease: %s', e)
+            exceptions.handle(request, message="Invalid value provided.")
+            return
+
+        net_mins = round((prolong - reduce) / 60.0)
+        min_string = '{:.0f}m'.format(abs(net_mins))
+        if net_mins > 0:
+            fields['prolong_for'] = min_string
+        elif net_mins < 0:
+            fields['reduce_by'] = min_string
+
+        # start_time = data.get('start_time', None)
+        # end_time = data.get('end_time', None)
+        # if start_time:
+        #     if start_time[0] == '+':
+        #         fields['defer_by'] = start_time[1:]
+        #     elif start_time[0] == '-':
+        #         fields['advance_by'] = start_time[1:]
+        # if end_time:
+        #     if end_time[0] == '+':
+        #         fields['prolong_for'] = end_time[1:]
+        #     elif end_time[0] == '-':
+        #         fields['reduce_by'] = end_time[1:]
 
         reservations = data.get('reservations', None)
         if reservations:
@@ -318,33 +337,9 @@ class UpdateForm(forms.SelfHandlingForm):
     def clean(self):
         cleaned_data = super(UpdateForm, self).clean()
 
-        lease_name = cleaned_data.get("lease_name", None)
-        start_time = cleaned_data.get("start_time", None)
-        end_time = cleaned_data.get("end_time", None)
-        reservations = cleaned_data.get("reservations", None)
+        lease_name = cleaned_data.get("lease_name")
+        prolong_for = cleaned_data.get("prolong_for")
+        reduce_by = cleaned_data.get("reduce_by")
 
-        if start_time:
-            valid = re.match('^[+-]\d+[dhm]$', start_time)
-            if not valid:
-                raise forms.ValidationError("The start/end time must be "
-                                            "a form of +/- number d/h/m. "
-                                            "(e.g. +1h)")
-
-        if end_time:
-            valid = re.match('^[+-]\d+[dhm]$', end_time)
-            if not valid:
-                raise forms.ValidationError("The start/end time must be "
-                                            "a form of +/- number d/h/m. "
-                                            "(e.g. +1h)")
-
-        if reservations:
-            try:
-                reservations = eval(reservations)
-                cleaned_data['reservations'] = reservations
-            except (SyntaxError, NameError):
-                raise forms.ValidationError(
-                    _('Reservation values must written in JSON')
-                )
-
-        if not (lease_name or start_time or end_time or reservations):
+        if not (lease_name or prolong_for or reduce_by):
             raise forms.ValidationError("Nothing to update.")

@@ -1,0 +1,6 @@
+{% extends 'horizon/_scripts.html' %}
+
+{% block custom_js_files %}
+  <script src='{{ STATIC_URL }}leases/js/vendor/d3.gantt.js' type='text/javascript' charset='utf-8'></script>
+  <script src='{{ STATIC_URL }}leases/js/lease_gantt.js' type='text/javascript' charset='utf-8'></script>
+{% endblock %}

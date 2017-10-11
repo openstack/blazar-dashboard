@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
@@ -47,7 +48,15 @@ class OverviewTab(tabs.Tab):
             msg = _('Unable to retrieve lease details.')
             exceptions.handle(request, msg, redirect=redirect)
 
-        return {'lease': lease,
+        try:
+            nodes = client.node_in_lease(self.request, lease_id)
+        except Exception:
+            redirect = reverse('horizon:project:leases:index')
+            msg = _('Unable to retrieve nodes in lease.')
+            exceptions.handle(request, msg, redirect=redirect)
+
+        site = getattr(settings, 'CHAMELEON_SITE', None)
+        return {'lease': lease, 'nodes': nodes, 'site': site,
                 'reservation_generals': RESERVATION_GENERALS}
 
 

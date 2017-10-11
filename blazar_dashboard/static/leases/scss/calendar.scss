@@ -1,0 +1,61 @@
+#blazar-gantt {
+  width: 100%;
+  min-height: 800px;
+  position: relative;
+}
+
+#blazar-gantt .chart {
+  width: inherit;
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-content {
+  box-sizing: border-box;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  padding: 3px;
+}
+
+rect.task {
+  opacity: 0.9;
+}
+
+rect.task-hover {
+  stroke: yellow;
+}
+
+line.time-now {
+  stroke: #A8DE52;
+  stroke-width: 3;
+}
+
+.grid .tick {
+  stroke: rgba(#000, 0.25);
+}
+
+.axis line,
+.axis path {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2;
+  shape-rendering: crispEdges;
+}
+
+.gantt-group {
+  margin: 5px;
+}
+
+.form-control.gantt-datebox-date {
+  width: 120px;
+}
+
+.form-control.gantt-datebox-hour {
+  width: 55px;
+}

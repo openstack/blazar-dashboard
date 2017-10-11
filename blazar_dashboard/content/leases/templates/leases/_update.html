@@ -4,6 +4,7 @@
 {% block form_id %}update_lease{% endblock %}
 {% block form_action %}{% url 'horizon:project:leases:update' lease.id %}{% endblock %}
 
+{% block modal-header %}{% trans "Update Lease Parameters" %}{% endblock %}
 {% block modal_id %}update_lease_modal{% endblock %}
 
 {% block modal-body %}
