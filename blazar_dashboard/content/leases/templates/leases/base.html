@@ -4,8 +4,8 @@
   {% include "_stylesheets.html" %}
 
   {% load compress %}
-  {#% compress css %#}
-    <link href='{{ STATIC_URL }}leases/scss/calendarz.scss' type='text/scss' media='screen' rel='stylesheet' />
+  {% compress css %}
+    <link href='{{ STATIC_URL }}leases/scss/calendar.scss' type='text/scss' media='screen' rel='stylesheet' />
     <link href='{{ STATIC_URL }}leases/scss/widgets.scss' type='text/scss' media='screen' rel='stylesheet' />
-  {#% endcompress %#}
+  {% endcompress %}
 {% endblock %}
