@@ -18,5 +18,7 @@ from blazar_dashboard.content.hosts import views
 urlpatterns = [
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(r'^create/$', views.CreateView.as_view(), name='create'),
-    url(r'^(?P<host_id>[^/]+)/$', views.DetailView.as_view(), name='detail')
+    url(r'^(?P<host_id>[^/]+)/$', views.DetailView.as_view(), name='detail'),
+    url(r'^(?P<host_id>[^/]+)/update$', views.UpdateView.as_view(),
+        name='update'),
 ]

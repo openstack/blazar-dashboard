@@ -26,6 +26,13 @@ class CreateHosts(tables.LinkAction):
     icon = "plus"
 
 
+class UpdateHost(tables.LinkAction):
+    name = "update"
+    verbose_name = _("Update Host")
+    url = "horizon:admin:hosts:update"
+    classes = ("btn-create", "ajax-modal")
+
+
 class DeleteHost(tables.DeleteAction):
     name = "delete"
     data_type_singular = _("Host")
@@ -66,4 +73,4 @@ class HostsTable(tables.DataTable):
         name = "hosts"
         verbose_name = _("Hosts")
         table_actions = (CreateHosts, DeleteHost,)
-        row_actions = (DeleteHost,)
+        row_actions = (UpdateHost, DeleteHost,)
