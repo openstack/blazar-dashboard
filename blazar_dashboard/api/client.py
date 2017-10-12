@@ -199,7 +199,7 @@ def node_in_lease(request, lease_id):
         JOIN leases AS l ON l.id = r.lease_id
     WHERE
         l.id = %s
-        AND ca.deleted = '0'
+        AND ca.deleted = ''
     '''
     sql_args = (lease_id,)
 
@@ -210,8 +210,21 @@ def node_in_lease(request, lease_id):
 
 def compute_host_list(request, node_types=False):
     """Return a list of compute hosts available for reservation"""
+    sql = '''\
+    SELECT
+        hypervisor_hostname,
+        vcpus,
+        memory_mb,
+        local_gb,
+        cpu_info,
+        hypervisor_type
+    FROM
+        computehosts
+    WHERE
+        deleted = ""
+    '''
     cursor = connections['blazar'].cursor()
-    cursor.execute('SELECT hypervisor_hostname, vcpus, memory_mb, local_gb, cpu_info, hypervisor_type FROM computehosts WHERE deleted="0"')
+    cursor.execute(sql)
     compute_hosts = dictfetchall(cursor)
 
     if node_types:
@@ -233,7 +246,7 @@ def node_type_map(cursor=None):
         INNER JOIN (
             SELECT id, MAX(created_at)
             FROM blazar.computehost_extra_capabilities
-            WHERE capability_name = 'node_type' AND deleted = '0'
+            WHERE capability_name = 'node_type' AND deleted = ''
             GROUP BY computehost_id
         ) AS exl
         ON ex.id = exl.id
@@ -262,9 +275,9 @@ def reservation_calendar(request):
         JOIN reservations r ON r.id = cha.reservation_id
         JOIN leases l ON l.id = r.lease_id
     WHERE
-        r.deleted = '0'
-        AND c.deleted = '0'
-        AND cha.deleted = '0'
+        r.deleted = ''
+        AND c.deleted = ''
+        AND cha.deleted = ''
     ORDER BY
         start_date,
         project_id;
@@ -283,7 +296,7 @@ def available_nodetypes():
         computehost_extra_capabilities
     WHERE
         capability_name = 'node_type'
-        AND deleted = '0'
+        AND deleted = ''
     '''
     cursor.execute(sql)
     available = {row[0] for row in cursor.fetchall()}

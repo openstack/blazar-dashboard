@@ -40,30 +40,55 @@ class CreateForm(forms.SelfHandlingForm):
     start_date = forms.DateTimeField(
         label=_("Start Date"),
         required=False,
-        help_text=_('Enter YYYY-MM-DD HH:MM or blank for now'),
-        input_formats=['%Y-%m-%d %H:%M'],
+        help_text=_('Enter date with the format YYYY-MM-DD or leave blank for today'),
+        error_messages={
+            'invalid': _('Value should be date, formatted YYYY-MM-DD'),
+        },
+        input_formats=['%Y-%m-%d'],
         widget=forms.DateTimeInput(
-            attrs={'placeholder': 'YYYY-MM-DD HH:MM (blank for now)'})
+            attrs={'placeholder':'Today', 'class':'datepicker'}),
+    )
+    start_time = forms.DateTimeField(
+        label=_('Start Time'),
+        help_text=_('Enter time with the format HH:MM (24-hour clock) or leave blank for now'),
+        error_messages={
+            'invalid': _('Value should be time, formatted HH:MM (24-hour clock)'),
+        },
+        input_formats=['%H:%M'],
+        widget=forms.DateTimeInput(attrs={'placeholder':'Now'}),
+        required=False,
     )
     end_date = forms.DateTimeField(
         label=_("End Date"),
         required=False,
-        help_text=_('Enter YYYY-MM-DD HH:MM or blank for Start Date + 24h'),
-        input_formats=['%Y-%m-%d %H:%M'],
+        help_text=_('Enter date with the format YYYY-MM-DD or leave blank for tomorrow'),
+        error_messages={
+            'invalid': _('Value should be date, formatted YYYY-MM-DD'),
+        },
+        input_formats=['%Y-%m-%d'],
         widget=forms.DateTimeInput(
-            attrs={'placeholder': 'YYYY-MM-DD HH:MM (blank for Start Date + '
-                                  '24h)'})
+            attrs={'placeholder':'Tomorrow', 'class':'datepicker'}),
+    )
+    end_time = forms.DateTimeField(
+        label=_('End Time'),
+        help_text=_('Enter time with the format HH:MM (24-hour clock) or leave blank for same time as now'),
+        error_messages={
+            'invalid': _('Value should be time, formatted HH:MM (24-hour clock)'),
+        },
+        input_formats=['%H:%M'],
+        widget=forms.DateTimeInput(attrs={'placeholder':'Same time as now'}),
+        required=False,
     )
     resource_type = forms.ChoiceField(
         label=_("Resource Type"),
-        # required=True,
+        required=True,
         choices=(
             ('host', _('Physical Host')),
             # ('instance', _('Virtual Instance'))
         ),
-        # widget=forms.ThemableSelectWidget(attrs={
-        #     'class': 'switchable',
-        #     'data-slug': 'source'})
+        widget=forms.ThemableSelectWidget(attrs={
+            'class': 'switchable',
+            'data-slug': 'source'})
     )
 
     # Fields for host reservation
@@ -73,10 +98,10 @@ class CreateForm(forms.SelfHandlingForm):
         help_text=_('Enter the minimum number of hosts to reserve.'),
         min_value=1,
         initial=1,
-        # widget=forms.NumberInput(attrs={
-        #     'class': 'switched',
-        #     'data-switch-on': 'source',
-        #     'data-source-host': _('Minimum Number of Hosts')})
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-host': _('Minimum Number of Hosts')})
     )
     max_hosts = forms.IntegerField(
         label=_('Maximum Number of Hosts'),
@@ -84,10 +109,10 @@ class CreateForm(forms.SelfHandlingForm):
         help_text=_('Enter the maximum number of hosts to reserve.'),
         min_value=1,
         initial=1,
-        # widget=forms.NumberInput(attrs={
-        #     'class': 'switched',
-        #     'data-switch-on': 'source',
-        #     'data-source-host': _('Maximum Number of Hosts')})
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-host': _('Maximum Number of Hosts')})
     )
     specific_node = forms.CharField(
         label=_('Reserve Specific Node'),
@@ -101,8 +126,7 @@ class CreateForm(forms.SelfHandlingForm):
                     'either more storage space, varied storage devices, GPUs, '
                     'Infiniband, or other specialized hardware. Different '
                     'hardware is available on different sites.'),
-        # choices=api.client.available_nodetypes,
-        choices=[('apple', 'Apple'), ('banana', 'Banana'), ('cherry', 'Cherry')],
+        choices=api.client.available_nodetypes,
     )
     affinity = forms.ChoiceField(
         label=_("Affinity Rule"),
@@ -189,27 +213,43 @@ class CreateForm(forms.SelfHandlingForm):
 
     def clean(self):
         cleaned_data = super(CreateForm, self).clean()
-        local = pytz.timezone(self.request.session.get(
+        localtz = pytz.timezone(self.request.session.get(
             'django_timezone',
             self.request.COOKIES.get('django_timezone', 'UTC')))
 
-        if cleaned_data['start_date']:
-            cleaned_data['start_date'] = local.localize(
-                cleaned_data['start_date'].replace(tzinfo=None)
-            ).astimezone(pytz.timezone('UTC'))
-        else:
-            cleaned_data['start_date'] = (datetime.datetime.utcnow()
-                                          + datetime.timedelta(minutes=1))
+        ##### straight copy
+        # convert dates and times to datetime UTC
+        start_date = cleaned_data.get("start_date")
+        start_time = cleaned_data.get("start_time")
 
-        if cleaned_data['end_date']:
-            cleaned_data['end_date'] = local.localize(
-                cleaned_data['end_date'].replace(tzinfo=None)
-            ).astimezone(pytz.timezone('UTC'))
-        else:
-            cleaned_data['end_date'] = (cleaned_data['start_date'] +
-                                        datetime.timedelta(days=1))
+        if start_date == '' or start_date == None:
+            start_date = datetime.datetime.now(localtz) + datetime.timedelta(minutes=1)
 
-        if cleaned_data['start_date'] < datetime.datetime.utcnow():
+        if start_time == '' or start_time == None:
+            start_time = datetime.datetime.now(localtz) + datetime.timedelta(minutes=1)
+
+        #logger.debug("start date " + start_date.strftime('%Y-%m-%d'))
+        #logger.debug("start time " + start_time.strftime('%H:%M'))
+        start_datetime = self.prepare_datetimes(start_date, start_time)
+
+        end_date = cleaned_data.get("end_date")
+        end_time = cleaned_data.get("end_time")
+
+        if end_date == '' or end_date == None:
+            end_date = datetime.datetime.now(localtz) + datetime.timedelta(days=1)
+
+        if end_time == '' or end_time == None:
+            end_time = datetime.datetime.now(localtz) + datetime.timedelta(days=1)
+
+        #logger.debug("End date " + end_date.strftime('%Y-%m-%d'))
+        #logger.debug("End time " + end_time.strftime('%H:%M'))
+        end_datetime = self.prepare_datetimes(end_date, end_time)
+        ##### plugging results
+        cleaned_data['start_date'] = start_datetime
+        cleaned_data['end_date'] = end_datetime
+        ##### end copy
+
+        if cleaned_data['start_date'] < datetime.datetime.now(tz=pytz.utc):
             raise forms.ValidationError("Start date must be in the future")
 
         if cleaned_data['start_date'] >= cleaned_data['end_date']:
@@ -232,6 +272,15 @@ class CreateForm(forms.SelfHandlingForm):
                 % (cleaned_data['min_hosts'], num_hosts))
 
         return cleaned_data
+
+    def prepare_datetimes(self, date_val, time_val):
+        """
+        Ensure the date and time are in user's timezone, then convert to UTC.
+        """
+        localtz = pytz.timezone(self.request.session.get('django_timezone', self.request.COOKIES.get('django_timezone', 'UTC')))
+        datetime_val = date_val.replace(hour=time_val.time().hour, minute=time_val.time().minute, tzinfo=None)
+        datetime_val = localtz.localize(datetime_val)
+        return datetime_val.astimezone(pytz.utc)
 
 
 class UpdateForm(forms.SelfHandlingForm):

@@ -5,3 +5,62 @@
     <h3>{% trans "Description" %}:</h3>
     <p>{% trans "Create a lease with the provided values." %}</p>
 {% endblock %}
+
+{% block modal-body %}
+<style>
+.datepicker{z-index:1051!important;}
+</style>
+<div class="left">
+    <fieldset>
+        <input id="cookie_offset" type="hidden" value="{{offset}}" />
+    <div class="alert alert-warning" id="timezone">
+      <p>
+        {% blocktrans %}
+        Your timezone is currently configured as <b>{{timezone}}</b>. If you need to update your
+        timezone please go to your
+        {% endblocktrans%}
+        <a href="{% url 'horizon:settings:user:index' %}">User Settings</a>.
+      </p>
+    </div>
+    {% include "horizon/common/_form_fields.html" %}
+    </fieldset>
+</div>
+<div class="right">
+    <h3>{% trans "Description" %}:</h3>
+    <p>{% trans "Create a new lease with the provided values." %}</p>
+      <p>
+        Leave date and time values blank to start a lease immediately (on-demand).
+      </p>
+      <p>
+        For specific node reservations, you can find the node UUID using
+        <a href="https://www.chameleoncloud.org/user/discovery">Resource Discovery</a>
+        on the user portal.
+      </p>
+</div>
+{% endblock %}
+
+{% block modal-footer %}
+  <input class="btn btn-primary pull-right" type="submit" value="{% trans "Create" %}" />
+  <a href="{% url 'horizon:project:leases:index' %}" class="btn secondary cancel close">{% trans "Cancel" %}</a>
+<script type='text/javascript' charset='utf-8'>
+    (function(window, horizon, $, undefined) {
+        'use strict';
+
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            todayHighlight: true,
+            autoclose: true
+        });
+
+        var offset = new Date().getTimezoneOffset();
+        var cookie_offset = $('#cookie_offset').val();
+
+        if (cookie_offset != offset) {
+            $('#timezone').show();
+        } else {
+            $('#timezone').hide();
+        }
+
+    })(window, horizon, jQuery);
+</script>
+{% endblock %}
