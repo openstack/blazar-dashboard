@@ -19,6 +19,6 @@
 {% endblock %}
 
 {% block modal-footer %}
+  <a href="{% url 'horizon:project:leases:index' %}" class="btn btn-default cancel">{% trans "Cancel" %}</a>
   <input class="btn btn-primary pull-right" type="submit" value="{% trans "Update" %}" />
-  <a href="{% url 'horizon:project:leases:index' %}" class="btn secondary cancel close">{% trans "Cancel" %}</a>
 {% endblock %}
