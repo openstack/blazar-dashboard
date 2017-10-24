@@ -61,6 +61,7 @@ class UpdateView(forms.ModalFormView):
     form_class = project_forms.UpdateForm
     template_name = 'project/leases/update.html'
     success_url = reverse_lazy('horizon:project:leases:index')
+    modal_header = _("Update Lease")
 
     def get_initial(self):
         initial = super(UpdateView, self).get_initial()
