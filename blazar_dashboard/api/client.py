@@ -26,6 +26,7 @@ from openstack_dashboard.api import base
 from blazarclient import client as blazar_client
 
 
+NOT_DELETED = ''
 LOG = logging.getLogger(__name__)
 LEASE_DATE_FORMAT = "%Y-%m-%d %H:%M"
 
@@ -188,10 +189,11 @@ def compute_host_available(request, start_date, end_date):
     count = cursor.fetchone()[0]
     return count
 
-def node_in_lease(request, lease_id):
+def node_in_lease(request, lease_id, active_only=True):
     sql = '''\
     SELECT
-        c.hypervisor_hostname
+        c.hypervisor_hostname,
+        ca.deleted
     FROM
         computehost_allocations AS ca
         JOIN computehosts AS c ON c.id = ca.compute_host_id
@@ -199,8 +201,9 @@ def node_in_lease(request, lease_id):
         JOIN leases AS l ON l.id = r.lease_id
     WHERE
         l.id = %s
-        AND ca.deleted = ''
     '''
+    if active_only:
+        sql += " AND ca.deleted = '{}'".format(NOT_DELETED)
     sql_args = (lease_id,)
 
     cursor = connections['blazar'].cursor()

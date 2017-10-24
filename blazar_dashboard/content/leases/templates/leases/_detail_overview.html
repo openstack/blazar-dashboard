@@ -68,4 +68,23 @@
       </dl>
     {% endfor %}
   </div>
+
+  <div class="info detail">
+    <h4>{% trans "Nodes" %}</h4>
+    <hr class="header_rule">
+    <dl class="dl-horizontal">
+      {% for node in nodes %}
+        <dt></dt>
+        <dd>
+        {% if site %}
+          <a href="https://www.chameleoncloud.org/hardware/node/sites/{{ site }}/clusters/chameleon/nodes/{{ node.hypervisor_hostname }}/">
+            {{ node.hypervisor_hostname }}
+          </a>
+        {% else %}
+          {{ node.hypervisor_hostname }}
+        {% endif %}
+        </dd>
+      {% endfor %}
+    </dl>
+  </div>
 </div>
