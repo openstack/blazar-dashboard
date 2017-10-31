@@ -1,12 +1,17 @@
+========================
+Team and repository tags
+========================
+
+.. image:: https://governance.openstack.org/tc/badges/blazar-dashboard.svg
+    :target: https://governance.openstack.org/tc/reference/tags/index.html
+
+.. Change things from this point on
+
 ================
 Blazar dashboard
 ================
 
 Horizon plugin for the Blazar Reservation Service for OpenStack
-
-* Free software: Apache license
-* Source: https://git.openstack.org/cgit/openstack/blazar-dashboard
-* Bugs: https://bugs.launchpad.net/blazar
 
 Features
 --------
@@ -22,3 +27,16 @@ Manual Installation
 -------------------
 
 See doc/source/install.rst
+
+Other Resources
+---------------
+
+* Source code:
+
+  * `Blazar <https://git.openstack.org/cgit/openstack/blazar>`__
+  * `Nova filter scheduler <https://git.openstack.org/cgit/openstack/blazar-nova>`__
+  * `Client tools <https://git.openstack.org/cgit/openstack/python-blazarclient>`__
+  * `Dashboard (Horizon plugin) <https://git.openstack.org/cgit/openstack/blazar-dashboard>`__
+
+* Blueprints/Bugs: https://launchpad.net/blazar
+* Documentation: https://blazar.readthedocs.io/en/latest/
