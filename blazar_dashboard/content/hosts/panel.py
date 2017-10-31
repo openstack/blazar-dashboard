@@ -10,22 +10,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test import helpers
-
-from blazar_dashboard.test.test_data import utils
-
-
-def create_stubs(stubs_to_create={}):
-    return helpers.create_stubs(stubs_to_create)
+from django.utils.translation import ugettext_lazy as _
+import horizon
 
 
-class TestCase(helpers.TestCase):
-    def _setup_test_data(self):
-        super(TestCase, self)._setup_test_data()
-        utils.load_test_data(self)
-
-
-class BaseAdminViewTests(helpers.BaseAdminViewTests):
-    def _setup_test_data(self):
-        super(BaseAdminViewTests, self)._setup_test_data()
-        utils.load_test_data(self)
+class Hosts(horizon.Panel):
+    name = _("Hosts")
+    slug = "hosts"

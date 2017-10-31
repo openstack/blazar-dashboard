@@ -133,9 +133,46 @@ lease_sample2 = {
     'trust_id': 'b442a580b9504ababf305bf2b4c49512'
 }
 
+host_sample1 = {
+    "status": None,
+    "hypervisor_type": "QEMU",
+    "created_at": "2017-10-01 12:00:00",
+    "updated_at": None,
+    "hypervisor_hostname": "compute-1",
+    "memory_mb": 4096,
+    "cpu_info": "{'dummy': 'true'}",
+    "vcpus": 1,
+    "service_name": "blazar",
+    "hypervisor_version": 2005000,
+    "local_gb": 128,
+    "id": "1",
+    "trust_id": "dummy"
+}
+
+host_sample2 = {
+    "status": None,
+    "hypervisor_type": "QEMU",
+    "created_at": "2017-10-01 12:00:00",
+    "updated_at": None,
+    "hypervisor_hostname": "compute-2",
+    "memory_mb": 4096,
+    "cpu_info": "{'dummy': 'true'}",
+    "vcpus": 1,
+    "service_name": "blazar",
+    "hypervisor_version": 2005000,
+    "local_gb": 128,
+    "id": "2",
+    "trust_id": "dummy"
+}
+
 
 def data(TEST):
     TEST.leases = utils.TestDataContainer()
 
     TEST.leases.add(api.client.Lease(lease_sample1))
     TEST.leases.add(api.client.Lease(lease_sample2))
+
+    TEST.hosts = utils.TestDataContainer()
+
+    TEST.hosts.add(api.client.Host(host_sample1))
+    TEST.hosts.add(api.client.Host(host_sample2))

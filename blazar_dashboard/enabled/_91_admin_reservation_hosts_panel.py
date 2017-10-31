@@ -10,22 +10,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test import helpers
+# The slug of the panel to be added to HORIZON_CONFIG. Required.
+PANEL = 'hosts'
+# The slug of the panel group the PANEL is associated with.
+PANEL_GROUP = 'reservation'
+# The slug of the dashboard the PANEL associated with. Required.
+PANEL_DASHBOARD = 'admin'
 
-from blazar_dashboard.test.test_data import utils
-
-
-def create_stubs(stubs_to_create={}):
-    return helpers.create_stubs(stubs_to_create)
-
-
-class TestCase(helpers.TestCase):
-    def _setup_test_data(self):
-        super(TestCase, self)._setup_test_data()
-        utils.load_test_data(self)
-
-
-class BaseAdminViewTests(helpers.BaseAdminViewTests):
-    def _setup_test_data(self):
-        super(BaseAdminViewTests, self)._setup_test_data()
-        utils.load_test_data(self)
+# Python panel class of the PANEL to be added.
+ADD_PANEL = 'blazar_dashboard.content.hosts.panel.Hosts'
