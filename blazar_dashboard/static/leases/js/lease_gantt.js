@@ -54,12 +54,22 @@
       hosts.forEach(function(host) {
           availableNodeTypes[host.node_type] = true;
       });
+      var chooser = $("#node-type-chooser");
+      chooser.empty(); // make idempotent so multiple loads don't fill multiple times (should also fix the multiple-load thing later...)
+      chooser.append(new Option('All Nodes', '*'));
       nodeTypesPretty.forEach(function(nt) {
         if (availableNodeTypes[nt[0]]) {
-          $('#node-type-chooser').append(new Option(nt[1], nt[0]));
+          chooser.append(new Option(nt[1], nt[0]));
+          delete availableNodeTypes[nt[0]];
         }
       });
-      $('#node-type-chooser').prop('disabled', false);
+      // fill chooser with node-types without a pretty name (when new ones pop up)
+      Object.keys(availableNodeTypes).forEach(function (key) {
+        if (availableNodeTypes[key]) {
+          chooser.append(new Option(key, key));
+        }
+      });
+      chooser.prop('disabled', false);
 
       var taskNames = $.map(resp.compute_hosts, function(host, i) {
         return host.hypervisor_hostname;

@@ -160,15 +160,12 @@ class CreateForm(forms.SelfHandlingForm):
                     'resource_type': 'physical:host',
                     'min': data['min_hosts'],
                     'max': data['max_hosts'],
-                    # 'hypervisor_properties': (data['hypervisor_properties']
-                    #                           or ''),
-                    # 'resource_properties': data['resource_properties'] or ''
                     'hypervisor_properties': '',
                     'resource_properties': '',
                 }
             ]
         elif data['resource_type'] == 'instance':
-            raise forms.ValidationError("Invalid resource type.")
+            raise forms.ValidationError("Invalid resource type for Chameleon bare-metal.")
             reservations = [
                 {
                     'resource_type': 'virtual:instance',
@@ -190,7 +187,7 @@ class CreateForm(forms.SelfHandlingForm):
 
         if resource_properties is not None:
             resource_properties = json.dumps(resource_properties)
-            # reservations[0]['resource_properties'] = resource_properties
+            reservations[0]['resource_properties'] = resource_properties
 
         events = []
 
