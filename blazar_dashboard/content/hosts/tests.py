@@ -13,8 +13,9 @@
 from django.core.urlresolvers import reverse
 from django import http
 from mox3.mox import IsA
+from openstack_dashboard import api
 
-from blazar_dashboard import api
+from blazar_dashboard import api as blazar_api
 from blazar_dashboard.test import helpers as test
 
 import logging
@@ -24,13 +25,15 @@ INDEX_TEMPLATE = 'admin/hosts/index.html'
 INDEX_URL = reverse('horizon:admin:hosts:index')
 DETAIL_TEMPLATE = 'admin/hosts/detail.html'
 DETAIL_URL_BASE = 'horizon:admin:hosts:detail'
+CREATE_URL = reverse('horizon:admin:hosts:create')
+CREATE_TEMPLATE = 'admin/hosts/create.html'
 
 
 class HostsTests(test.BaseAdminViewTests):
-    @test.create_stubs({api.client: ('host_list',)})
+    @test.create_stubs({blazar_api.client: ('host_list',)})
     def test_index(self):
         hosts = self.hosts.list()
-        api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
+        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
         self.mox.ReplayAll()
 
         res = self.client.get(INDEX_URL)
@@ -39,9 +42,9 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertContains(res, 'compute-1')
         self.assertContains(res, 'compute-2')
 
-    @test.create_stubs({api.client: ('host_list',)})
+    @test.create_stubs({blazar_api.client: ('host_list',)})
     def test_index_no_hosts(self):
-        api.client.host_list(IsA(http.HttpRequest)).AndReturn(())
+        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(())
         self.mox.ReplayAll()
 
         res = self.client.get(INDEX_URL)
@@ -49,9 +52,9 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertNoMessages(res)
         self.assertContains(res, 'No items to display')
 
-    @test.create_stubs({api.client: ('host_list',)})
+    @test.create_stubs({blazar_api.client: ('host_list',)})
     def test_index_error(self):
-        api.client.host_list(
+        blazar_api.client.host_list(
             IsA(http.HttpRequest)
         ).AndRaise(self.exceptions.blazar)
         self.mox.ReplayAll()
@@ -60,11 +63,11 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertMessageCount(res, error=1)
 
-    @test.create_stubs({api.client: ('host_get',)})
+    @test.create_stubs({blazar_api.client: ('host_get',)})
     def test_host_detail(self):
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        api.client.host_get(IsA(http.HttpRequest),
-                            host['id']).AndReturn(host)
+        blazar_api.client.host_get(IsA(http.HttpRequest),
+                                   host['id']).AndReturn(host)
         self.mox.ReplayAll()
 
         res = self.client.get(reverse(DETAIL_URL_BASE, args=[host['id']]))
@@ -72,10 +75,10 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertContains(res, 'compute-1')
         self.assertContains(res, 'ex1')
 
-    @test.create_stubs({api.client: ('host_get',)})
+    @test.create_stubs({blazar_api.client: ('host_get',)})
     def test_host_detail_error(self):
-        api.client.host_get(IsA(http.HttpRequest),
-                            'invalid').AndRaise(self.exceptions.blazar)
+        blazar_api.client.host_get(IsA(http.HttpRequest),
+                                   'invalid').AndRaise(self.exceptions.blazar)
         self.mox.ReplayAll()
 
         res = self.client.get(reverse(DETAIL_URL_BASE, args=['invalid']))
@@ -83,12 +86,35 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('host_list', 'host_delete')})
+    @test.create_stubs({blazar_api.client: ('host_list', 'host_create',),
+                        api.nova: ('host_list',)})
+    def test_create_hosts(self):
+        blazar_api.client.host_list(IsA(http.HttpRequest)
+                                    ).AndReturn([])
+        api.nova.host_list(IsA(http.HttpRequest)
+                           ).AndReturn(self.novahosts.list())
+        host_names = [h.host_name for h in self.novahosts.list()]
+        for host_name in host_names:
+            blazar_api.client.host_create(
+                IsA(http.HttpRequest),
+                name=host_name,
+            ).AndReturn([])
+        self.mox.ReplayAll()
+        form_data = {
+            'select_hosts_role_member': host_names
+        }
+
+        res = self.client.post(CREATE_URL, form_data)
+        self.assertNoFormErrors(res)
+        self.assertMessageCount(success=(len(host_names) + 1))
+        self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({blazar_api.client: ('host_list', 'host_delete')})
     def test_delete_host(self):
         hosts = self.hosts.list()
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
-        api.client.host_delete(IsA(http.HttpRequest), host['id'])
+        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
+        blazar_api.client.host_delete(IsA(http.HttpRequest), host['id'])
         self.mox.ReplayAll()
 
         action = 'hosts__delete__%s' % host['id']
@@ -97,13 +123,14 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('host_list', 'host_delete')})
+    @test.create_stubs({blazar_api.client: ('host_list', 'host_delete')})
     def test_delete_host_error(self):
         hosts = self.hosts.list()
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
-        api.client.host_delete(IsA(http.HttpRequest),
-                               host['id']).AndRaise(self.exceptions.blazar)
+        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
+        blazar_api.client.host_delete(
+            IsA(http.HttpRequest),
+            host['id']).AndRaise(self.exceptions.blazar)
         self.mox.ReplayAll()
 
         action = 'hosts__delete__%s' % host['id']

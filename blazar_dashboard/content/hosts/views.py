@@ -14,10 +14,12 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import tables
 from horizon import tabs
+from horizon import workflows
 
 from blazar_dashboard import api
 from blazar_dashboard.content.hosts import tables as project_tables
 from blazar_dashboard.content.hosts import tabs as project_tabs
+from blazar_dashboard.content.hosts import workflows as project_workflows
 
 
 class IndexView(tables.DataTableView):
@@ -37,3 +39,9 @@ class IndexView(tables.DataTableView):
 class DetailView(tabs.TabView):
     tab_group_class = project_tabs.HostDetailTabs
     template_name = 'admin/hosts/detail.html'
+
+
+class CreateView(workflows.WorkflowView):
+    workflow_class = project_workflows.CreateHostsWorkflow
+    template_name = 'admin/hosts/create.html'
+    page_title = _("Create Hosts")
