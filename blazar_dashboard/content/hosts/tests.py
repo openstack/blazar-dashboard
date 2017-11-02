@@ -82,3 +82,32 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertTemplateNotUsed(res, DETAIL_TEMPLATE)
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({api.client: ('host_list', 'host_delete')})
+    def test_delete_host(self):
+        hosts = self.hosts.list()
+        host = self.hosts.get(hypervisor_hostname='compute-1')
+        api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
+        api.client.host_delete(IsA(http.HttpRequest), host['id'])
+        self.mox.ReplayAll()
+
+        action = 'hosts__delete__%s' % host['id']
+        form_data = {'action': action}
+        res = self.client.post(INDEX_URL, form_data)
+        self.assertMessageCount(success=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({api.client: ('host_list', 'host_delete')})
+    def test_delete_host_error(self):
+        hosts = self.hosts.list()
+        host = self.hosts.get(hypervisor_hostname='compute-1')
+        api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
+        api.client.host_delete(IsA(http.HttpRequest),
+                               host['id']).AndRaise(self.exceptions.blazar)
+        self.mox.ReplayAll()
+
+        action = 'hosts__delete__%s' % host['id']
+        form_data = {'action': action}
+        res = self.client.post(INDEX_URL, form_data)
+        self.assertMessageCount(error=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)

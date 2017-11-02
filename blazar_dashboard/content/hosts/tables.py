@@ -11,8 +11,37 @@
 #    under the License.
 
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
 from horizon import tables
 from horizon.templatetags import sizeformat
+
+from blazar_dashboard import api
+
+
+class DeleteHost(tables.DeleteAction):
+    name = "delete"
+    data_type_singular = _("Host")
+    data_type_plural = _("Hosts")
+    classes = ('btn-danger', 'btn-terminate')
+
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Delete Host",
+            u"Delete Hosts",
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Deleted Host",
+            u"Deleted Hosts",
+            count
+        )
+
+    def delete(self, request, host_id):
+        api.client.host_delete(request, host_id)
 
 
 class HostsTable(tables.DataTable):
@@ -28,3 +57,5 @@ class HostsTable(tables.DataTable):
     class Meta(object):
         name = "hosts"
         verbose_name = _("Hosts")
+        table_actions = (DeleteHost,)
+        row_actions = (DeleteHost,)
