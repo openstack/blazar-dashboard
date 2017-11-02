@@ -16,7 +16,8 @@ from horizon.templatetags import sizeformat
 
 
 class HostsTable(tables.DataTable):
-    name = tables.Column("hypervisor_hostname", verbose_name=_("Host name"))
+    name = tables.Column("hypervisor_hostname", verbose_name=_("Host name"),
+                         link="horizon:admin:hosts:detail")
     vcpus = tables.Column("vcpus", verbose_name=_("VCPUs"))
     memory_mb = tables.Column("memory_mb", verbose_name=_("RAM"),
                               filters=(sizeformat.mb_float_format,))

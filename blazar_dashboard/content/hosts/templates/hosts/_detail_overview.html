@@ -1,0 +1,49 @@
+{% load i18n sizeformat %}
+
+<div class="detail">
+  <div class="info detail">
+    <dl class="dl-horizontal">
+      <dt>{% trans "Host name" %}</dt>
+      <dd>{{ host.hypervisor_hostname }}</dd>
+      <dt>{% trans "Id" %}</dt>
+      <dd>{{ host.id }}</dd>
+      <dt>{% trans "Status" %}</dt>
+      <dd>{{ host.status }}</dd>      <dt>{% trans "Created at" %}</dt>
+      <dd>{{ host.created_at|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
+      <dt>{% trans "Updated at" %}</dt>
+      <dd>{{ host.updated_at|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
+    </dl>
+  </div>
+
+  <div>
+    <h4>{% trans "CPU Specs" %}</h4>
+    <hr class="header_rule">
+    <dl class="dl-horizontal">
+      <dt>{% trans "VCPUs" %}</dt>
+      <dd>{{ host.vcpus|default:_("None") }}</dd>
+      {% for key, value in host.cpu_info_dict.items %}
+        <dt>{{ key }}</dt>
+        <dd>{{ value }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+
+  <div>
+    <h4>{% trans "Other Specs" %}</h4>
+    <hr class="header_rule">
+    <dl class="dl-horizontal">
+      <dt>{% trans "RAM" %}</dt>
+      <dd>{{ host.memory_mb|mb_float_format }}</dd>
+      <dt>{% trans "Local storage" %}</dt>
+      <dd>{{ host.local_gb|diskgbformat }}</dd>
+      <dt>{% trans "Hypervisor type" %}</dt>
+      <dd>{{ host.hypervisor_type }}</dd>
+      <dt>{% trans "Hypervisor version" %}</dt>
+      <dd>{{ host.hypervisor_version }}</dd>
+      {% for key, value in host.extra_capabilities.items %}
+        <dt>{{ key }}</dt>
+        <dd>{{ value }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+</div>
