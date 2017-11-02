@@ -10,13 +10,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from django.core.urlresolvers import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
+from horizon import forms
 from horizon import tables
 from horizon import tabs
+from horizon.utils import memoized
 from horizon import workflows
 
 from blazar_dashboard import api
+from blazar_dashboard.content.hosts import forms as project_forms
 from blazar_dashboard.content.hosts import tables as project_tables
 from blazar_dashboard.content.hosts import tabs as project_tabs
 from blazar_dashboard.content.hosts import workflows as project_workflows
@@ -45,3 +49,35 @@ class CreateView(workflows.WorkflowView):
     workflow_class = project_workflows.CreateHostsWorkflow
     template_name = 'admin/hosts/create.html'
     page_title = _("Create Hosts")
+
+
+class UpdateView(forms.ModalFormView):
+    form_class = project_forms.UpdateForm
+    template_name = 'admin/hosts/update.html'
+    success_url = reverse_lazy('horizon:admin:hosts:index')
+
+    def get_initial(self):
+        initial = super(UpdateView, self).get_initial()
+
+        initial['host'] = self.get_object()
+        if initial['host']:
+            initial['host_id'] = initial['host'].id
+            initial['name'] = initial['host'].hypervisor_hostname
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super(UpdateView, self).get_context_data(**kwargs)
+        context['host'] = self.get_object()
+        return context
+
+    @memoized.memoized_method
+    def get_object(self):
+        host_id = self.kwargs['host_id']
+        try:
+            host = api.client.host_get(self.request, host_id)
+        except Exception:
+            msg = _("Unable to retrieve host.")
+            redirect = reverse_lazy('horizon:admin:hosts:index')
+            exceptions.handle(self.request, msg, redirect=redirect)
+        return host

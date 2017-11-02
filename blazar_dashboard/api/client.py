@@ -124,6 +124,12 @@ def host_create(request, name, **kwargs):
     return Host(host)
 
 
+def host_update(request, host_id, values):
+    """Update a host."""
+    host = blazarclient(request).host.update(host_id, values)
+    return Host(host)
+
+
 def host_delete(request, host_id):
     """Delete a host."""
     blazarclient(request).host.delete(host_id)

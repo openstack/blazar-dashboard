@@ -27,6 +27,8 @@ DETAIL_TEMPLATE = 'admin/hosts/detail.html'
 DETAIL_URL_BASE = 'horizon:admin:hosts:detail'
 CREATE_URL = reverse('horizon:admin:hosts:create')
 CREATE_TEMPLATE = 'admin/hosts/create.html'
+UPDATE_URL_BASE = 'horizon:admin:hosts:update'
+UPDATE_TEMPLATE = 'admin/hosts/update.html'
 
 
 class HostsTests(test.BaseAdminViewTests):
@@ -133,6 +135,53 @@ class HostsTests(test.BaseAdminViewTests):
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=(len(host_names) + 1))
         self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({blazar_api.client: ('host_get', 'host_update')})
+    def test_update_host(self):
+        host = self.hosts.get(hypervisor_hostname='compute-1')
+        blazar_api.client.host_get(
+            IsA(http.HttpRequest),
+            host['id']
+        ).AndReturn(host)
+        blazar_api.client.host_update(
+            IsA(http.HttpRequest),
+            host_id=host['id'],
+            values={"key": "updated"}
+        )
+        form_data = {
+            'host_id': host['id'],
+            'values': '{"key": "updated"}'
+        }
+        self.mox.ReplayAll()
+
+        res = self.client.post(reverse(UPDATE_URL_BASE, args=[host['id']]),
+                               form_data)
+        self.assertNoFormErrors(res)
+        self.assertMessageCount(success=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({blazar_api.client: ('host_get', 'host_update')})
+    def test_update_host_error(self):
+        host = self.hosts.get(hypervisor_hostname='compute-1')
+        blazar_api.client.host_get(
+            IsA(http.HttpRequest),
+            host['id']
+        ).AndReturn(host)
+        blazar_api.client.host_update(
+            IsA(http.HttpRequest),
+            host_id=host['id'],
+            values={"key": "updated"}
+        ).AndRaise(self.exceptions.blazar)
+        form_data = {
+            'host_id': host['id'],
+            'values': '{"key": "updated"}'
+        }
+        self.mox.ReplayAll()
+
+        res = self.client.post(reverse(UPDATE_URL_BASE, args=[host['id']]),
+                               form_data)
+        self.assertNoFormErrors(res)
+        self.assertContains(res, 'An error occurred while updating')
 
     @test.create_stubs({blazar_api.client: ('host_list', 'host_delete')})
     def test_delete_host(self):
