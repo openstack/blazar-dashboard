@@ -51,7 +51,10 @@ class Host(base.APIDictWrapper):
         super(Host, self).__init__(apiresource)
 
     def cpu_info_dict(self):
-        return eval(getattr(self, 'cpu_info', ""))
+        cpu_info_dict = getattr(self, 'cpu_info', '{}')
+        if not cpu_info_dict:
+            cpu_info_dict = '{}'
+        return eval(cpu_info_dict)
 
     def extra_capabilities(self):
         excaps = {}
