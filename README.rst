@@ -34,7 +34,7 @@ Other Resources
 * Source code:
 
   * `Blazar <https://git.openstack.org/cgit/openstack/blazar>`__
-  * `Nova filter scheduler <https://git.openstack.org/cgit/openstack/blazar-nova>`__
+  * `Nova scheduler filter <https://git.openstack.org/cgit/openstack/blazar-nova>`__
   * `Client tools <https://git.openstack.org/cgit/openstack/python-blazarclient>`__
   * `Dashboard (Horizon plugin) <https://git.openstack.org/cgit/openstack/blazar-dashboard>`__
 
