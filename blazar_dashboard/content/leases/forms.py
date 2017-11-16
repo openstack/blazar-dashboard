@@ -79,18 +79,6 @@ class CreateForm(forms.SelfHandlingForm):
         widget=forms.DateTimeInput(attrs={'placeholder':'Same time as now'}),
         required=False,
     )
-    resource_type = forms.ChoiceField(
-        label=_("Resource Type"),
-        required=True,
-        choices=(
-            ('host', _('Physical Host')),
-            # ('instance', _('Virtual Instance'))
-        ),
-        widget=forms.ThemableSelectWidget(attrs={
-            'class': 'switchable',
-            'data-slug': 'source'})
-    )
-
     # Fields for host reservation
     min_hosts = forms.IntegerField(
         label=_('Minimum Number of Hosts'),
@@ -114,19 +102,12 @@ class CreateForm(forms.SelfHandlingForm):
             'data-switch-on': 'source',
             'data-source-host': _('Maximum Number of Hosts')})
     )
-    specific_node = forms.CharField(
-        label=_('Reserve Specific Node'),
-        help_text=_('To reserve a specific node, enter the node UUID here. '
-                    'If provided, overrides node type.'),
+    resource_properties = forms.CharField(
+        label=_("Resource Properties"),
         required=False,
-    )
-    node_type = forms.ChoiceField(
-        label=_('Node Type to Reserve'),
-        help_text=_('Choose standard compute nodes or heterogenous nodes with '
-                    'either more storage space, varied storage devices, GPUs, '
-                    'Infiniband, or other specialized hardware. Different '
-                    'hardware is available on different sites.'),
-        choices=api.client.available_nodetypes,
+        help_text=_('Choose properties of the resource(s) to reserve.'),
+        max_length=1024,
+        widget=widgets.CapabilityWidget,
     )
     affinity = forms.ChoiceField(
         label=_("Affinity Rule"),
@@ -154,6 +135,7 @@ class CreateForm(forms.SelfHandlingForm):
     )
 
     def handle(self, request, data):
+        data['resource_type'] = 'host' # All Chameleon needs.
         if data['resource_type'] == 'host':
             reservations = [
                 {
@@ -165,7 +147,6 @@ class CreateForm(forms.SelfHandlingForm):
                 }
             ]
         elif data['resource_type'] == 'instance':
-            raise forms.ValidationError("Invalid resource type for Chameleon bare-metal.")
             reservations = [
                 {
                     'resource_type': 'virtual:instance',
@@ -178,15 +159,8 @@ class CreateForm(forms.SelfHandlingForm):
                 }
             ]
 
-        resource_properties = None
-
-        if data['specific_node']:
-            resource_properties = ['=', '$uid', data['specific_node']]
-        elif data['node_type']:
-            resource_properties = ['=', '$node_type', data['node_type']]
-
-        if resource_properties is not None:
-            resource_properties = json.dumps(resource_properties)
+        resource_properties = data['resource_properties']
+        if resource_properties:
             reservations[0]['resource_properties'] = resource_properties
 
         events = []

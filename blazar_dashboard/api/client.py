@@ -312,3 +312,48 @@ def available_nodetypes():
         LOG.debug('New node types without pretty name(s): {}'.format(unprettyable))
 
     return choices
+
+
+def extra_capability_names():
+    """
+    Return all the names for possible selections.
+    """
+    cursor = connections['blazar'].cursor()
+    sql = '''\
+    SELECT DISTINCT
+        capability_name
+    FROM
+        computehost_extra_capabilities
+    WHERE
+        deleted = %s
+    '''
+    cursor.execute(sql, [NOT_DELETED])
+    # available = dictfetchall(cursor)
+    available = [row[0] for row in cursor.fetchall()]
+    return available
+
+
+def extra_capability_values(name):
+    """
+    Return the capabilities with a given "name". The client can cache/combine
+    the rows together to build up a full copy of the extra capabilities table
+    if they really want. Then they can do the "what-if" filtering themselves
+    to count hosts.
+
+    They could maybe mix that with the calendar data to even see if the chosen
+    number of hosts are free. Might need to do the lookup between
+    computehost_id (small integers) and the UUID via the uid name:value pairs.
+    """
+    cursor = connections['blazar'].cursor()
+    sql = '''\
+    SELECT
+        id, computehost_id, capability_name, capability_value
+    FROM
+        computehost_extra_capabilities
+    WHERE
+        capability_name = %s
+        AND deleted = %s;
+    '''
+    cursor.execute(sql, [name, NOT_DELETED])
+    rows = dictfetchall(cursor)
+    return rows

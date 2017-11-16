@@ -1,0 +1,220 @@
+<div id="criteria">
+    <!-- <input id="criteria-payload" name="criteria-{{ widget.name }}" type="hidden"> -->
+    <div id="no-criteria-warning" class="alert alert-danger" hidden="hidden">
+        <strong>No filters are specified,</strong> random hardware will be
+        assigned. Recommend that you
+        <a href="#" class="cri-adder" data-cri-name="node_type">add a filter for a node type</a>
+        or <a href="#" class="cri-adder" data-cri-name="uid">a specific node ID</a>.
+    </div>
+    <div>
+        <ul id="criteria-list" class="form-inline">
+        </ul>
+    </div>
+    <button id="criteria-add" type="button" class="btn btn-sm btn-success">Add Filter</button>
+    <!-- <div id="criteria-matchinfo" class="btn btn-link" hidden>Filters match * hosts.</button> -->
+</div>
+<hr>
+<script>
+function capabilitiesjs() {
+    'use strict';
+
+    var capabilityNames = [];
+    var capabilityValues = {};
+    var capabilityRows = [];
+
+    var criteriaCounter = 0; // gives distinct values to the input names
+
+    // initial load of names
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            capabilityNames = JSON.parse(this.responseText)['extra_capability_names'];
+            capabilityNames.sort();
+            // console.log(capabilityNames)
+
+            // default to node type selection
+            addCriterionItem('node_type');
+        }
+    };
+    xhr.open('GET', '{% url "horizon:project:leases:extra_names" %}', true);
+    xhr.send();
+
+    var crl = document.querySelector('#criteria-list');
+    crl.innerHTML = '';
+
+    function displayWarningIfEmpty() {
+        var criteria = document.querySelectorAll('.criterion');
+        document.querySelector('#no-criteria-warning').hidden = criteria.length !== 0;
+    }
+
+    function addCriterion(event) {
+        addCriterionItem();
+    }
+
+    function addCriterionItem(prefilled_name) {
+        var criterion = document.createElement('li');
+        criterion.className = 'criterion';
+        criterion.innerHTML =
+            // '<div class="form-inline">' +
+            '<select class="form-control cri-name">' +
+                '<option disabled selected></option>' + // blank...select something else.
+            '</select> ' +
+            '<select class="form-control cri-equality">' +
+                '<option value="eq">=</option>' +
+                '<option value="lt">&lt;</option>' +
+                '<option value="le">&le;</option>' +
+                '<option value="gt">&gt;</option>' +
+                '<option value="ge">&ge;</option>' +
+                '<option value="ne">&ne;</option>' +
+            '</select> '+
+            '<select class="form-control cri-val">' +
+                '<option disabled selected></option>' +
+            '</select> ' +
+            '<button class="btn btn-xs btn-danger cri-rm">X</button>' ;//+
+            // '</div>';
+
+        var index = criteriaCounter;
+        criteriaCounter = criteriaCounter + 1;
+
+        var name_selector = criterion.querySelector('.cri-name');
+        name_selector.name = 'criteria-{{ widget.name }}-name-' + index;
+        capabilityNames.forEach(function(cn) {
+            name_selector.appendChild(new Option(cn, cn));
+        });
+        name_selector.addEventListener('change', changeCriterionName, false);
+
+        var equality_selector = criterion.querySelector('.cri-equality');
+        equality_selector.name = 'criteria-{{ widget.name }}-equality-' + index;
+
+        var value_selector = criterion.querySelector('.cri-val');
+        value_selector.name = 'criteria-{{ widget.name }}-value-' + index;
+        value_selector.addEventListener('change', displayMatchingHostCount, false);
+
+        var remove_button = criterion.querySelector('.cri-rm');
+        remove_button.addEventListener('click', removeCriterion, false);
+
+        if (prefilled_name) {
+            name_selector.value = prefilled_name;
+            // setting value bypasses change event; fire manually.
+            var event = new Event('change');
+            name_selector.dispatchEvent(event);
+        }
+
+        document.querySelector('#no-criteria-warning').hidden = true;
+        crl.appendChild(criterion);
+    }
+
+    function changeCriterionName(event) {
+        var criterion = event.target.parentNode;
+        var name_selector = event.target;
+        var value_selector = criterion.querySelector('.cri-val');
+
+        value_selector.innerHTML = '<option disabled selected></option>'; // clear
+
+        if (capabilityValues[name_selector.value]) {
+            console.log('using cached values');
+            fillCriteriaValues(value_selector, name_selector.value);
+            displayMatchingHostCount();
+        } else {
+            console.log('need to load values for name=' + name_selector.value);
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var newRows = JSON.parse(this.responseText)['extra_capability_values'];
+                    Array.prototype.push.apply(capabilityRows, newRows);
+
+                    var newCV = {};
+                    newRows.forEach(function(r) {
+                        if (newCV[r['capability_value']]) {
+                            newCV[r['capability_value']].push(r['computehost_id']);
+                        } else {
+                            newCV[r['capability_value']] = [r['computehost_id']];
+                        }
+                    });
+                    capabilityValues[name_selector.value] = newCV;
+                    fillCriteriaValues(value_selector, name_selector.value);
+                }
+            };
+            xhr.open('GET', '{% url "horizon:project:leases:extra_values" name="NAME" %}'.replace('NAME', name_selector.value), true);
+            xhr.send();
+        }
+    }
+
+    function fillCriteriaValues(element, name) {
+        var values = Object.keys(capabilityValues[name]);
+        values.sort();
+        values.forEach(function(cv) {
+            element.appendChild(new Option(cv, cv));
+        });
+    }
+
+    function removeCriterion(event) {
+        var criterion = event.target.parentNode;
+        criterion.parentNode.removeChild(criterion);
+
+        displayWarningIfEmpty();
+        displayMatchingHostCount();
+    }
+
+    function hostsMatchingCriterion(criterion) {
+        var name_selector = criterion.querySelector('.cri-name');
+        var value_selector = criterion.querySelector('.cri-val');
+        return capabilityValues[name_selector.value][value_selector.value];
+    }
+
+    function displayMatchingHostCount() {
+        return; // fix later.
+        var display = document.querySelector('#criteria-matchinfo');
+        var criteria = document.querySelectorAll('.criterion');
+        var count;
+
+        if (criteria.length === 0) {
+            count = '*';
+        } else {
+            // TODO(nicktimko): support computing it for things other than ==.
+            // display.hidden =
+            //     document.querySelectorAll('.criterion .cri-equality option:checked[value="eq"]').length
+            //     !== criteria.length;
+
+            // var hosts = hostsMatchingCriterion(criteria.pop()) // prime the intersectionining
+            // criteria.forEach(function (cri) {
+            //     hosts.filter(function(n) {return hostsMatchingCriterion(cri).includes(n)});
+            // });
+            var hosts = hostsMatchingCriterion(criteria[0]); // prime the intersectionining of sets
+            for (var i = 1; i < criteria.length; ++i) {
+                hosts = hosts.filter(function(n) {return hostsMatchingCriterion(criteria[i]).includes(n)});
+            }
+            count = hosts.length;
+        }
+
+        display.textContent = 'Filters match ' + count + ' hosts.';
+    }
+
+    var addbutton = document.querySelector('#criteria-add');
+    addbutton.addEventListener("click", addCriterion, false);
+
+    document.querySelectorAll('.cri-adder').forEach(function (elem) {
+        elem.addEventListener("click", function (event) {
+            addCriterionItem(elem.dataset.criName);
+        });
+    });
+}
+
+// this is horrible, but if not compressed then horizon likes to double
+// (or triple) run code.
+// var pragma_once_capabilitiesjs;
+// if (pragma_once_capabilitiesjs === undefined) {
+//     capabilitiesjs();
+//     pragma_once_capabilitiesjs = true;
+// }
+// above doesn't work because it dirties the document; the modal form pop-up
+// thinks it already did the code.
+var cri_div = document.querySelector('#criteria');
+if (cri_div.dataset.loaded_once === undefined) {
+    capabilitiesjs();
+    cri_div.dataset.loaded_once = true;
+    console.log('loaded criteria widget code')
+} else {
+    console.log('blocked reload of widget code :/');
+}
+</script>
