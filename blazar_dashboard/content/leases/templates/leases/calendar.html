@@ -6,13 +6,6 @@
   {% include "horizon/common/_page_header.html" with title=_("Lease Calendar") %}
 {% endblock page_header %}
 
-{% block js %}
-  {{ block.super }}
-  {# TODO(nicktimko): call out to ./_scripts.html and go back into the compress block #}
-  <script src='{{ STATIC_URL }}leases/js/vendor/d3.gantt.js' type='text/javascript' charset='utf-8'></script>
-  <script src='{{ STATIC_URL }}leases/js/lease_gantt.js' type='text/javascript' charset='utf-8'></script>
-{% endblock %}
-
 {% block main %}
   <form class="form-inline" name="blazar-gantt-controls">
     <div class="form-group gantt-group">
@@ -46,4 +39,8 @@
       <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
     </div>
   </div>
+
+  {# TODO(nicktimko): call out to ./_scripts.html and go back into the compress block #}
+  <script src='{{ STATIC_URL }}leases/js/vendor/d3.gantt.js' type='text/javascript' charset='utf-8'></script>
+  <script src='{{ STATIC_URL }}leases/js/lease_gantt.js' type='text/javascript' charset='utf-8'></script>
 {% endblock %}
