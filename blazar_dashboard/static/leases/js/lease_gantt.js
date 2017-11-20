@@ -18,6 +18,14 @@
       'pending': 'task-pending'
     };
 
+    // Guard against re-running init() and a pointless calendar.json load.
+    // Horizon seems to call us twice for some reason
+    if ($('#blazar-gantt.loaded').length > 0) {
+      console.log('blocking duplicate init');
+      return;
+    }
+    $('#blazar-gantt').addClass('loaded');
+
     $.getJSON('../calendar.json')
     .done(function(resp) {
       var nodeTypesPretty = [ // preserve order so it's not random
