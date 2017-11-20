@@ -19,3 +19,13 @@ PANEL_DASHBOARD = 'project'
 
 # Python panel class of the PANEL to be added.
 ADD_PANEL = 'blazar_dashboard.content.leases.panel.Leases'
+
+ADD_SCSS_FILES = [
+    'leases/scss/calendar.scss',
+    'leases/scss/widgets.scss',
+]
+
+ADD_JS_FILES = [
+    'leases/js/vendor/d3.gantt.js',
+    'leases/js/lease_gantt.js',
+]

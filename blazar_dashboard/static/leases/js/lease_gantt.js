@@ -1,6 +1,10 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
+  // don't run on other pages. the JS is loaded everywhere via the
+  // ADD_JS_FILES directive in the .py file in enabled/
+  if ($('#blazar-gantt').length === 0) return;
+
   function init() {
     var gantt;
     var all_tasks;
