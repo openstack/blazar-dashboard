@@ -22,7 +22,6 @@ urlpatterns = [
     url(r'^calendar/$', leases_views.CalendarView.as_view(), name='calendar'),
     url(r'^calendar\.json$', leases_views.calendar_data_view, name='calendar_data'),
 
-    url(r'^extras/testform$', leases_views.ExtraCapabilityView.as_view(), name='extras'),
     url(r'^extras/names$', leases_views.extra_capability_names, name='extra_names'),
     url(r'^extras/values/(?P<name>[^/]+)$',
         leases_views.extra_capability_values,

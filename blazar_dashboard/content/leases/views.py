@@ -57,20 +57,16 @@ def calendar_data_view(request):
     return JsonResponse(data)
 
 
-class ExtraCapabilityView(views.APIView):
-    template_name = 'project/leases/extest.html'
-
-
 def extra_capability_names(request):
     data = {
-        'extra_capability_names': api.client.extra_capability_names(),
+        'extra_capability_names': api.client.extra_capability_names(request),
     }
     return JsonResponse(data)
 
 
 def extra_capability_values(request, name):
     data = {
-        'extra_capability_values': api.client.extra_capability_values(name),
+        'extra_capability_values': api.client.extra_capability_values(request, name),
     }
     return JsonResponse(data)
 
