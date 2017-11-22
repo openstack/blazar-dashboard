@@ -39,4 +39,4 @@ Other Resources
   * `Dashboard (Horizon plugin) <https://git.openstack.org/cgit/openstack/blazar-dashboard>`__
 
 * Blueprints/Bugs: https://launchpad.net/blazar
-* Documentation: https://blazar.readthedocs.io/en/latest/
+* Documentation: https://docs.openstack.org/blazar/latest/
