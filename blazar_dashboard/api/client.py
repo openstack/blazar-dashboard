@@ -179,8 +179,8 @@ def compute_host_available(request, start_date, end_date):
             join reservations r on r.id = cha.`reservation_id`
             join leases l on l.`id` = r.`lease_id`
             where
-                r.deleted="0" and
-                ch.deleted="0" and
+                r.deleted="" and
+                ch.deleted="" and
                 ((l.`start_date` > %s and l.`start_date` < %s)
                 or (l.`end_date` > %s and l.`end_date` < %s)
                 or (l.`start_date` < %s and l.`end_date` > %s))
