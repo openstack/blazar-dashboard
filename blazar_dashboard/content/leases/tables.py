@@ -87,6 +87,9 @@ class LeasesTable(tables.DataTable):
     action = tables.Column("action", verbose_name=_("Action"),)
     status = tables.Column("status", verbose_name=_("Status"),)
     status_reason = tables.Column("status_reason", verbose_name=_("Reason"),)
+    degraded = tables.Column("degraded", verbose_name=_("Degraded"),
+                             filters=(django_filters.yesno,
+                                      django_filters.capfirst),)
 
     class Meta(object):
         name = "leases"

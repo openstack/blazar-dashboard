@@ -32,7 +32,9 @@ lease_sample1 = {
             'created_at': '2017-06-27 15:00:00',
             'updated_at': None,
             'id': '087bc740-6d2d-410b-9d47-c7b2b55a9d36',
-            'resource_type': 'physical:host'
+            'resource_type': 'physical:host',
+            'missing_resources': False,
+            'resources_changed': False
         }
     ],
     'created_at': '2017-06-27 15:00:00',
@@ -71,7 +73,8 @@ lease_sample1 = {
     'project_id': 'aa45f56901ef45ee95e3d211097c0ea3',
     'status_reason': None,
     'start_date': '2017-06-27T18:00:00.000000',
-    'trust_id': 'b442a580b9504ababf305bf2b4c49512'
+    'trust_id': 'b442a580b9504ababf305bf2b4c49512',
+    'degraded': False
 }
 
 lease_sample2 = {
@@ -91,7 +94,9 @@ lease_sample2 = {
             'created_at': '2017-06-27 15:00:00',
             'updated_at': None,
             'id': '1b05370e-d92a-452d-80db-89842666b604',
-            'resource_type': 'physical:host'
+            'resource_type': 'physical:host',
+            'missing_resources': False,
+            'resources_changed': False
         }
     ],
     'created_at': '2017-06-27 15:00:00',
@@ -130,7 +135,8 @@ lease_sample2 = {
     'project_id': 'aa45f56901ef45ee95e3d211097c0ea3',
     'status_reason': None,
     'start_date': '2017-06-27T18:00:00.000000',
-    'trust_id': 'b442a580b9504ababf305bf2b4c49512'
+    'trust_id': 'b442a580b9504ababf305bf2b4c49512',
+    'degraded': False
 }
 
 host_sample1 = {

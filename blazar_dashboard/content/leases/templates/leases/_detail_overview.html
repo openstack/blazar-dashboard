@@ -21,6 +21,8 @@
       <dd>{{ lease.status|default:"-" }}</dd>
       <dt>{% trans "Status Reason" %}</dt>
       <dd>{{ lease.status_reason|default:"-" }}</dd>
+      <dt>{% trans "Degraded" %}</dt>
+      <dd>{{ lease.degraded|yesno|capfirst }}</dd>
     </dl>
   </div>
 

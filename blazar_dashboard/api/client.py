@@ -33,7 +33,8 @@ class Lease(base.APIDictWrapper):
                 ) = ('IN_PROGRESS', 'FAILED', 'COMPLETE')
 
     _attrs = ['id', 'name', 'start_date', 'end_date', 'user_id', 'project_id',
-              'before_end_date', 'action', 'status', 'status_reason']
+              'before_end_date', 'action', 'status', 'status_reason',
+              'degraded']
 
     def __init__(self, apiresource):
         super(Lease, self).__init__(apiresource)
