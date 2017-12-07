@@ -15,12 +15,8 @@
       <dd>{{ lease.start_date|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
       <dt>{% trans "End date" %}</dt>
       <dd>{{ lease.end_date|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
-      <dt>{% trans "Action" %}</dt>
-      <dd>{{ lease.action|default:"-" }}</dd>
       <dt>{% trans "Status" %}</dt>
       <dd>{{ lease.status|default:"-" }}</dd>
-      <dt>{% trans "Status Reason" %}</dt>
-      <dd>{{ lease.status_reason|default:"-" }}</dd>
       <dt>{% trans "Degraded" %}</dt>
       <dd>{{ lease.degraded|yesno|capfirst }}</dd>
     </dl>
