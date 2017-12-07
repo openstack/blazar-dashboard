@@ -7,8 +7,11 @@
       <dd>{{ host.hypervisor_hostname }}</dd>
       <dt>{% trans "Id" %}</dt>
       <dd>{{ host.id }}</dd>
+      <dt>{% trans "Reservable" %}</dt>
+      <dd>{{ host.reservable|yesno|capfirst }}</dd>
       <dt>{% trans "Status" %}</dt>
-      <dd>{{ host.status }}</dd>      <dt>{% trans "Created at" %}</dt>
+      <dd>{{ host.status }}</dd>
+      <dt>{% trans "Created at" %}</dt>
       <dd>{{ host.created_at|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
       <dt>{% trans "Updated at" %}</dt>
       <dd>{{ host.updated_at|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>

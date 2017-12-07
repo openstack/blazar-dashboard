@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from django.template import defaultfilters as filters
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy
 from horizon import tables
@@ -68,6 +69,8 @@ class HostsTable(tables.DataTable):
     local_gb = tables.Column("local_gb", verbose_name=_("Local Storage"),
                              filters=(sizeformat.diskgbformat,))
     type = tables.Column("hypervisor_type", verbose_name=_("Hypervisor type"))
+    reservable = tables.Column("reservable", verbose_name=_("Reservable"),
+                               filters=(filters.yesno, filters.capfirst))
 
     class Meta(object):
         name = "hosts"
