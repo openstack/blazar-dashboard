@@ -236,6 +236,21 @@ class UpdateForm(forms.SelfHandlingForm):
         widget=forms.TextInput(
             attrs={'placeholder': _('Valid suffix are d/h/m (e.g. +1h)')}),
         required=False)
+    reservations = forms.CharField(
+        label=_("Reservation values to update"),
+        help_text=_('Enter reservation values to update as JSON'),
+        widget=forms.Textarea(
+            attrs={'rows': 8,
+                   'placeholder':
+                   'e.g.\n'
+                   '[\n'
+                   '    {\n'
+                   '        "id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",\n'
+                   '        "max": 3\n'
+                   '    }\n'
+                   ']'}),
+        max_length=511,
+        required=False)
 
     def __init__(self, request, *args, **kwargs):
         super(UpdateForm, self).__init__(request, *args, **kwargs)
@@ -247,6 +262,7 @@ class UpdateForm(forms.SelfHandlingForm):
                 # reservation gets to support update of the start/end_time.
                 del self.fields['start_time']
                 del self.fields['end_time']
+                del self.fields['reservations']
                 return
 
     def handle(self, request, data):
@@ -271,6 +287,10 @@ class UpdateForm(forms.SelfHandlingForm):
             elif end_time[0] == '-':
                 fields['reduce_by'] = end_time[1:]
 
+        reservations = data.get('reservations', None)
+        if reservations:
+            fields['reservations'] = reservations
+
         try:
             api.client.lease_update(self.request, lease_id=lease_id, **fields)
             messages.success(request, _("Lease update started."))
@@ -287,6 +307,7 @@ class UpdateForm(forms.SelfHandlingForm):
         lease_name = cleaned_data.get("lease_name", None)
         start_time = cleaned_data.get("start_time", None)
         end_time = cleaned_data.get("end_time", None)
+        reservations = cleaned_data.get("reservations", None)
 
         if start_time:
             valid = re.match('^[+-]\d+[dhm]$', start_time)
@@ -302,5 +323,14 @@ class UpdateForm(forms.SelfHandlingForm):
                                             "a form of +/- number d/h/m. "
                                             "(e.g. +1h)")
 
-        if not (lease_name or start_time or end_time):
+        if reservations:
+            try:
+                reservations = eval(reservations)
+                cleaned_data['reservations'] = reservations
+            except (SyntaxError, NameError):
+                raise forms.ValidationError(
+                    _('Reservation values must written in JSON')
+                )
+
+        if not (lease_name or start_time or end_time or reservations):
             raise forms.ValidationError("Nothing to update.")
