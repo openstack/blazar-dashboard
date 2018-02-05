@@ -3,12 +3,12 @@ Installation
 ============
 
 Enabling in DevStack
---------------------
+====================
 
 * Not yet supported
 
 Manual Installation
--------------------
+===================
 
 Begin by cloning the Horizon and Blazar dashboard repositories::
 
