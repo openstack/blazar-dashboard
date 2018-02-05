@@ -22,144 +22,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from __future__ import print_function
-
-import os
-import sys
-
-import django
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
-
-sys.path.insert(0, ROOT)
-
-# This is required for ReadTheDocs.org, but isn't a bad idea anyway.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE',
-                      'blazar_dashboard.test.settings')
-
-# Starting in Django 1.7, standalone scripts, such as a sphinx build
-# require that django.setup() be called first.
-# https://docs.djangoproject.com/en/1.8/releases/1.7/#standalone-scripts
-django.setup()
-
-from blazar_dashboard import version as ui_ver
-
-
-def write_autodoc_index():
-
-    def find_autodoc_modules(module_name, sourcedir):
-        """returns a list of modules in the SOURCE directory."""
-        modlist = []
-        os.chdir(os.path.join(sourcedir, module_name))
-        print("SEARCHING %s" % sourcedir)
-        for root, dirs, files in os.walk("."):
-            for filename in files:
-                if filename == 'tests.py':
-                    continue
-                if filename.endswith(".py"):
-                    # remove the pieces of the root
-                    elements = root.split(os.path.sep)
-                    # replace the leading "." with the module name
-                    elements[0] = module_name
-                    # and get the base module name
-                    base, extension = os.path.splitext(filename)
-                    if not (base == "__init__"):
-                        elements.append(base)
-                    result = ".".join(elements)
-                    # print result
-                    modlist.append(result)
-        return modlist
-
-    RSTDIR = os.path.abspath(os.path.join(BASE_DIR, "sourcecode"))
-    SRCS = [('blazar_dashboard', ROOT), ]
-
-    EXCLUDED_MODULES = ()
-    CURRENT_SOURCES = {}
-
-    if not(os.path.exists(RSTDIR)):
-        os.mkdir(RSTDIR)
-    CURRENT_SOURCES[RSTDIR] = ['autoindex.rst']
-
-    INDEXOUT = open(os.path.join(RSTDIR, "autoindex.rst"), "w")
-    INDEXOUT.write("""
-=================
-Source Code Index
-=================
-
-.. contents::
-   :depth: 1
-   :local:
-
-""")
-
-    for modulename, path in SRCS:
-        sys.stdout.write("Generating source documentation for %s\n" %
-                         modulename)
-        INDEXOUT.write("\n%s\n" % modulename.capitalize())
-        INDEXOUT.write("%s\n" % ("=" * len(modulename),))
-        INDEXOUT.write(".. toctree::\n")
-        INDEXOUT.write("   :maxdepth: 1\n")
-        INDEXOUT.write("\n")
-
-        MOD_DIR = os.path.join(RSTDIR, modulename)
-        CURRENT_SOURCES[MOD_DIR] = []
-        if not(os.path.exists(MOD_DIR)):
-            os.mkdir(MOD_DIR)
-        for module in find_autodoc_modules(modulename, path):
-            if any([module.startswith(exclude) for exclude
-                   in EXCLUDED_MODULES]):
-                print("Excluded module %s." % module)
-                continue
-            mod_path = os.path.join(path, *module.split("."))
-            generated_file = os.path.join(MOD_DIR, "%s.rst" % module)
-
-            INDEXOUT.write("   %s/%s\n" % (modulename, module))
-
-            # Find the __init__.py module if this is a directory
-            if os.path.isdir(mod_path):
-                source_file = ".".join((os.path.join(mod_path, "__init__"),
-                                        "py",))
-            else:
-                source_file = ".".join((os.path.join(mod_path), "py"))
-
-            CURRENT_SOURCES[MOD_DIR].append("%s.rst" % module)
-            # Only generate a new file if the source has changed or we don't
-            # have a doc file to begin with.
-            if not os.access(generated_file, os.F_OK) or (
-                    os.stat(generated_file).st_mtime <
-                    os.stat(source_file).st_mtime):
-                print("Module %s updated, generating new documentation."
-                      % module)
-                FILEOUT = open(generated_file, "w")
-                header = "The :mod:`%s` Module" % module
-                FILEOUT.write("%s\n" % ("=" * len(header),))
-                FILEOUT.write("%s\n" % header)
-                FILEOUT.write("%s\n" % ("=" * len(header),))
-                FILEOUT.write(".. automodule:: %s\n" % module)
-                FILEOUT.write("  :members:\n")
-                FILEOUT.write("  :undoc-members:\n")
-                FILEOUT.write("  :show-inheritance:\n")
-                FILEOUT.write("  :noindex:\n")
-                FILEOUT.close()
-
-    INDEXOUT.close()
-
-    # Delete auto-generated .rst files for sources which no longer exist
-    for directory, subdirs, files in list(os.walk(RSTDIR)):
-        for old_file in files:
-            if old_file not in CURRENT_SOURCES.get(directory, []):
-                print("Removing outdated file for %s" % old_file)
-                os.remove(os.path.join(directory, old_file))
-
-
-write_autodoc_index()
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.insert(0, os.path.abspath('.'))
-
 # -- General configuration ----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -169,10 +31,13 @@ write_autodoc_index()
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*')
 # or your custom ones.
 extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.todo',
-              'sphinx.ext.coverage',
-              'sphinx.ext.viewcode',
+              'openstackdocstheme',
               ]
+
+# openstackdocstheme options
+repository_name = 'openstack/blazar-dashboard'
+bug_project = 'blazar'
+bug_tag = ''
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
@@ -194,10 +59,11 @@ copyright = u'2017, OpenStack Foundation'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
+# Version info
+from blazar_dashboard.version import version_info as blazar_dashboard_version
+release = blazar_dashboard_version.release_string()
 # The short X.Y version.
-version = ui_ver.version_info.version_string()
-# The full version, including alpha/beta/rc tags.
-release = ui_ver.version_info.release_string()
+version = blazar_dashboard_version.version_string()
 
 # The language for content autogenerated by Sphinx. Refer to documentation
 # for a list of supported languages.
@@ -226,7 +92,7 @@ exclude_patterns = ['**/#*', '**~', '**/#*#']
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
-show_authors = False
+# show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -234,15 +100,12 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
 
-primary_domain = 'py'
-nitpicky = False
-
 
 # -- Options for HTML output --------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'openstackdocs'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -314,124 +177,4 @@ html_last_updated_fmt = '%Y-%m-%d %H:%M'
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Horizondoc'
-
-
-# -- Options for LaTeX output -------------------------------------------------
-
-latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    # 'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    # 'preamble': '',
-}
-
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title, author, documentclass
-# [howto/manual]).
-latex_documents = [
-    ('index', 'Horizon.tex', u'Horizon Documentation',
-     u'OpenStack Foundation', 'manual'),
-]
-
-# The name of an image file (relative to this directory) to place at the top of
-# the title page.
-# latex_logo = None
-
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-# latex_use_parts = False
-
-# If true, show page references after internal links.
-# latex_show_pagerefs = False
-
-# If true, show URL addresses after external links.
-# latex_show_urls = False
-
-# Documents to append as an appendix to all manuals.
-# latex_appendices = []
-
-# If false, no module index is generated.
-# latex_domain_indices = True
-
-
-# -- Options for manual page output -------------------------------------------
-
-# One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', u'Blazar dashboard Documentation',
-     'Documentation for the Blazar dashboard plugin to the OpenStack '
-     'Dashboard (Horizon)',
-     [u'OpenStack'], 1)
-]
-
-# If true, show URL addresses after external links.
-# man_show_urls = False
-
-
-# -- Options for Texinfo output -----------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-texinfo_documents = [
-    ('index', 'Horizon', u'Horizon Documentation', u'OpenStack',
-     'Horizon', 'One line description of project.', 'Miscellaneous'),
-]
-
-# Documents to append as an appendix to all manuals.
-# texinfo_appendices = []
-
-# If false, no module index is generated.
-# texinfo_domain_indices = True
-
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-# texinfo_show_urls = 'footnote'
-
-
-# -- Options for Epub output --------------------------------------------------
-
-# Bibliographic Dublin Core info.
-epub_title = u'Horizon'
-epub_author = u'OpenStack'
-epub_publisher = u'OpenStack'
-epub_copyright = u'2012, OpenStack'
-
-# The language of the text. It defaults to the language option
-# or en if the language is not set.
-# epub_language = ''
-
-# The scheme of the identifier. Typical schemes are ISBN or URL.
-# epub_scheme = ''
-
-# The unique identifier of the text. This can be an ISBN number
-# or the project homepage.
-# epub_identifier = ''
-
-# A unique identification for the text.
-# epub_uid = ''
-
-# A tuple containing the cover image and cover page html template filenames.
-# epub_cover = ()
-
-# HTML files that should be inserted before the pages created by sphinx.
-# The format is a list of tuples containing the path and title.
-# epub_pre_files = []
-
-# HTML files shat should be inserted after the pages created by sphinx.
-# The format is a list of tuples containing the path and title.
-# epub_post_files = []
-
-# A list of files that should not be packed into the epub file.
-# epub_exclude_files = []
-
-# The depth of the table of contents in toc.ncx.
-# epub_tocdepth = 3
-
-# Allow duplicate toc entries.
-# epub_tocdup = True
+htmlhelp_basename = 'Blazardashboarddoc'

@@ -36,24 +36,18 @@ class SelectHostsAction(workflows.MembershipAction):
         field_name = self.get_member_field_name('member')
         self.fields[field_name] = forms.MultipleChoiceField(required=False)
 
+        hypervisors = []
+        blazar_hosts = []
         try:
-            nova_hosts = api.nova.host_list(request)
+            hypervisors = api.nova.hypervisor_list(request)
             blazar_hosts = blazar_api.client.host_list(request)
         except Exception:
             exceptions.handle(request, err_msg)
 
-        nova_hostnames = []
-        for host in nova_hosts:
-            if (host.host_name not in nova_hostnames
-                    and host.service == u'compute'):
-                nova_hostnames.append(host.host_name)
+        hv_hostnames = [hv.hypervisor_hostname for hv in hypervisors]
+        blazar_hostnames = [host.hypervisor_hostname for host in blazar_hosts]
 
-        blazar_hostnames = []
-        for host in blazar_hosts:
-            if host.hypervisor_hostname not in blazar_hostnames:
-                blazar_hostnames.append(host.hypervisor_hostname)
-
-        host_names = list(set(nova_hostnames) - set(blazar_hostnames))
+        host_names = list(set(hv_hostnames) - set(blazar_hostnames))
         host_names.sort()
 
         self.fields[field_name].choices = \
