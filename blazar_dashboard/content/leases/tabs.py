@@ -20,6 +20,18 @@ from horizon import tabs
 
 from blazar_dashboard.api import client
 
+RESERVATION_GENERALS = (
+    'id',
+    'lease_id',
+    'resource_id',
+    'resource_type',
+    'status',
+    'missing_resources',
+    'resources_changed',
+    'created_at',
+    'updated_at'
+)
+
 
 class OverviewTab(tabs.Tab):
     name = _("Overview")
@@ -35,7 +47,8 @@ class OverviewTab(tabs.Tab):
             msg = _('Unable to retrieve lease details.')
             exceptions.handle(request, msg, redirect=redirect)
 
-        return {'lease': lease}
+        return {'lease': lease,
+                'reservation_generals': RESERVATION_GENERALS}
 
 
 class LeaseDetailTabs(tabs.TabGroup):

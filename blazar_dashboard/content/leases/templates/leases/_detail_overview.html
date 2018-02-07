@@ -18,7 +18,7 @@
       <dt>{% trans "Status" %}</dt>
       <dd>{{ lease.status|default:"-" }}</dd>
       <dt>{% trans "Degraded" %}</dt>
-      <dd>{{ lease.degraded|yesno|capfirst }}</dd>
+      <dd>{{ lease.degraded|yesno|capfirst|default:"-" }}</dd>
     </dl>
   </div>
 
@@ -45,13 +45,24 @@
     {% for reservation in lease.reservations %}
       <hr class="header_rule">
       <dl class="dl-horizontal">
+        <dt>{% trans "id" %}</dt>
+        <dd>{{ reservation.id|default:"-" }}</dd>
+        <dt>{% trans "status" %}</dt>
+        <dd>{{ reservation.status|default:"-" }}</dd>
+        <dt>{% trans "resource type" %}</dt>
+        <dd>{{ reservation.resource_type|default:"-" }}</dd>
+        <dt>{% trans "missing resources" %}</dt>
+        <dd>{{ reservation.missing_resources|yesno|capfirst|default:"-" }}</dd>
+        <dt>{% trans "resources changed" %}</dt>
+        <dd>{{ reservation.resources_changed|yesno|capfirst|default:"-" }}</dd>
         {% for key, value in reservation.items %}
-          {% if 'ted_at' in key %}
+          {% if key not in reservation_generals %}
             <dt>{{ key }}</dt>
-            <dd>{{ value|parse_isotime|date:"Y-m-d H:i T"|default:"-" }}</dd>
-          {% else %}
-            <dt>{{ key }}</dt>
-            <dd>{{ value }}</dd>
+            {% if value is True or value is False %}
+              <dd>{{ value|yesno|capfirst|default:"-" }}</dd>
+            {% else %}
+              <dd>{{ value|default:"-" }}</dd>
+            {% endif %}
           {% endif %}
         {% endfor %}
       </dl>
