@@ -39,7 +39,13 @@
 # ones.
 extensions = [
     'reno.sphinxext',
+    'openstackdocstheme'
 ]
+
+# openstackdocstheme options
+repository_name = 'openstack/blazar-dashboard'
+bug_project = 'blazar'
+bug_tag = ''
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
@@ -106,7 +112,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'openstackdocs'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
