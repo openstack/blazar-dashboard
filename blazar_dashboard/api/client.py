@@ -45,7 +45,7 @@ class Host(base.APIDictWrapper):
     _attrs = ['id', 'hypervisor_hostname', 'hypervisor_type',
               'hypervisor_version', 'vcpus', 'cpu_info', 'memory_mb',
               'local_gb', 'status', 'created_at', 'updated_at',
-              'service_name', 'trust_id']
+              'service_name', 'trust_id', 'reservable']
 
     def __init__(self, apiresource):
         super(Host, self).__init__(apiresource)

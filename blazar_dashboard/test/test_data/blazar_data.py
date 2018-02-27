@@ -149,7 +149,8 @@ host_sample1 = {
     "local_gb": 128,
     "id": "1",
     "trust_id": "dummy",
-    "ex1": "dummy"
+    "ex1": "dummy",
+    "reservable": True
 }
 
 host_sample2 = {
@@ -166,7 +167,8 @@ host_sample2 = {
     "local_gb": 128,
     "id": "2",
     "trust_id": "dummy",
-    "ex2": "dummy"
+    "ex2": "dummy",
+    "reservable": True
 }
 
 
