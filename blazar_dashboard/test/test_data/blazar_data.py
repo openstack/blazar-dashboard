@@ -69,9 +69,7 @@ lease_sample1 = {
         }
     ],
     'id': '6ee55c78-ac52-41a6-99af-2d2d73bcc466',
-    'action': None,
     'project_id': 'aa45f56901ef45ee95e3d211097c0ea3',
-    'status_reason': None,
     'start_date': '2017-06-27T18:00:00.000000',
     'trust_id': 'b442a580b9504ababf305bf2b4c49512',
     'degraded': False
@@ -131,9 +129,7 @@ lease_sample2 = {
         }
     ],
     'id': 'ef32abe8-a1f7-4c2f-b5f2-941428848230',
-    'action': None,
     'project_id': 'aa45f56901ef45ee95e3d211097c0ea3',
-    'status_reason': None,
     'start_date': '2017-06-27T18:00:00.000000',
     'trust_id': 'b442a580b9504ababf305bf2b4c49512',
     'degraded': False
