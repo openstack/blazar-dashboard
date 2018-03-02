@@ -204,7 +204,7 @@ class LeasesTests(test.TestCase):
         self.assertContains(res, 'An error occurred while creating')
 
     @test.create_stubs({api.client: ('lease_get', 'lease_update')})
-    def test_update_lease(self):
+    def test_update_lease_name_and_date(self):
         lease = self.leases.get(name='lease-1')
         api.client.lease_get(
             IsA(http.HttpRequest),
@@ -220,6 +220,32 @@ class LeasesTests(test.TestCase):
             'lease_id': lease['id'],
             'lease_name': 'newname',
             'end_time': '+1h'
+        }
+        self.mox.ReplayAll()
+
+        res = self.client.post(reverse(UPDATE_URL_BASE, args=[lease['id']]),
+                               form_data)
+        self.assertNoFormErrors(res)
+        self.assertMessageCount(success=1)
+        self.assertRedirectsNoFollow(res, INDEX_URL)
+
+    @test.create_stubs({api.client: ('lease_get', 'lease_update')})
+    def test_update_lease_reservations(self):
+        lease = self.leases.get(name='lease-1')
+        api.client.lease_get(
+            IsA(http.HttpRequest),
+            lease['id']
+        ).AndReturn(lease)
+        api.client.lease_update(
+            IsA(http.HttpRequest),
+            lease_id=lease['id'],
+            reservations=[{"id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",
+                           "max": 3}]
+        )
+        form_data = {
+            'lease_id': lease['id'],
+            'reservations': '[{"id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",'
+                            ' "max": 3}]'
         }
         self.mox.ReplayAll()
 
