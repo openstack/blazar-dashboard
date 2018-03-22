@@ -45,6 +45,7 @@
         ['atom', 'Atom'],
         ['arm64', 'ARM64'],
       ];
+      var defaultOption = "compute_haswell";
 
       all_tasks = resp.reservations.map(function(reservation, i) {
         reservation.hosts = resp.reservations.filter(
@@ -77,6 +78,11 @@
         if (availableNodeTypes[nt[0]]) {
           chooser.append(new Option(nt[1], nt[0]));
           delete availableNodeTypes[nt[0]];
+        }
+        try {
+          chooser.find("[value='"+ defaultOption + "']").attr("selected","selected");
+        } catch(err) {
+          console.error(err);
         }
       });
       // fill chooser with node-types without a pretty name (when new ones pop up)
