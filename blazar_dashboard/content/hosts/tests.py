@@ -11,8 +11,7 @@
 #    under the License.
 
 from django.core.urlresolvers import reverse
-from django import http
-from mox3.mox import IsA
+import mock
 from openstack_dashboard import api
 
 from blazar_dashboard import api as blazar_api
@@ -32,185 +31,190 @@ UPDATE_TEMPLATE = 'admin/hosts/update.html'
 
 
 class HostsTests(test.BaseAdminViewTests):
-    @test.create_stubs({blazar_api.client: ('host_list',)})
-    def test_index(self):
+    @mock.patch.object(blazar_api.client, 'host_list')
+    def test_index(self, host_list):
         hosts = self.hosts.list()
-        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
-        self.mox.ReplayAll()
+        host_list.return_value = hosts
 
         res = self.client.get(INDEX_URL)
+
+        host_list.assert_called_once_with(test.IsHttpRequest())
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertNoMessages(res)
         self.assertContains(res, 'compute-1')
         self.assertContains(res, 'compute-2')
 
-    @test.create_stubs({blazar_api.client: ('host_list',)})
-    def test_index_no_hosts(self):
-        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(())
-        self.mox.ReplayAll()
+    @mock.patch.object(blazar_api.client, 'host_list')
+    def test_index_no_hosts(self, host_list):
+        hosts = []
+        host_list.return_value = hosts
 
         res = self.client.get(INDEX_URL)
+
+        host_list.assert_called_once_with(test.IsHttpRequest())
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertNoMessages(res)
         self.assertContains(res, 'No items to display')
 
-    @test.create_stubs({blazar_api.client: ('host_list',)})
-    def test_index_error(self):
-        blazar_api.client.host_list(
-            IsA(http.HttpRequest)
-        ).AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
+    @mock.patch.object(blazar_api.client, 'host_list')
+    def test_index_error(self, host_list):
+        host_list.side_effect = self.exceptions.blazar
 
         res = self.client.get(INDEX_URL)
+
+        host_list.assert_called_once_with(test.IsHttpRequest())
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertMessageCount(res, error=1)
 
-    @test.create_stubs({blazar_api.client: ('host_get',)})
-    def test_host_detail(self):
+    @mock.patch.object(blazar_api.client, 'host_get')
+    def test_host_detail(self, host_get):
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        blazar_api.client.host_get(IsA(http.HttpRequest),
-                                   host['id']).AndReturn(host)
-        self.mox.ReplayAll()
+        host_get.return_value = host
 
         res = self.client.get(reverse(DETAIL_URL_BASE, args=[host['id']]))
+
+        host_get.assert_called_once_with(test.IsHttpRequest(), host['id'])
         self.assertTemplateUsed(res, DETAIL_TEMPLATE)
         self.assertContains(res, 'compute-1')
         self.assertContains(res, 'ex1')
 
-    @test.create_stubs({blazar_api.client: ('host_get',)})
-    def test_host_detail_error(self):
-        blazar_api.client.host_get(IsA(http.HttpRequest),
-                                   'invalid').AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
+    @mock.patch.object(blazar_api.client, 'host_get')
+    def test_host_detail_error(self, host_get):
+        host_get.side_effect = self.exceptions.blazar
 
         res = self.client.get(reverse(DETAIL_URL_BASE, args=['invalid']))
+
+        host_get.assert_called_once_with(test.IsHttpRequest(), 'invalid')
         self.assertTemplateNotUsed(res, DETAIL_TEMPLATE)
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({blazar_api.client: ('host_list', 'host_create',),
-                        api.nova: ('hypervisor_list',)})
-    def test_create_hosts(self):
-        blazar_api.client.host_list(IsA(http.HttpRequest)
-                                    ).AndReturn([])
-        api.nova.hypervisor_list(IsA(http.HttpRequest)
-                                 ).AndReturn(self.hypervisors.list())
+    @mock.patch.object(blazar_api.client, 'host_list')
+    @mock.patch.object(blazar_api.client, 'host_create')
+    @mock.patch.object(api.nova, 'hypervisor_list')
+    def test_create_hosts(self, hypervisor_list, host_create, host_list):
         hv_hostnames = [hv.hypervisor_hostname
                         for hv in self.hypervisors.list()]
+        calls = []
         for host_name in hv_hostnames:
-            blazar_api.client.host_create(
-                IsA(http.HttpRequest),
-                name=host_name,
-            ).AndReturn([])
-        self.mox.ReplayAll()
+            calls.append(mock.call(test.IsHttpRequest(), name=host_name))
         form_data = {
             'select_hosts_role_member': hv_hostnames
         }
+        host_list.return_value = []
+        host_create.return_value = []
+        hypervisor_list.return_value = self.hypervisors.list()
 
         res = self.client.post(CREATE_URL, form_data)
+        host_list.assert_called_once_with(test.IsHttpRequest())
+        host_create.assert_has_calls(calls)
+        self.assertEqual(len(hv_hostnames), host_create.call_count)
+        hypervisor_list.assert_called_once_with(test.IsHttpRequest())
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=(len(hv_hostnames) + 1))
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({blazar_api.client: ('host_list', 'host_create',),
-                        api.nova: ('hypervisor_list',)})
-    def test_create_hosts_with_extra_caps(self):
-        blazar_api.client.host_list(IsA(http.HttpRequest)
-                                    ).AndReturn([])
-        api.nova.hypervisor_list(IsA(http.HttpRequest)
-                                 ).AndReturn(self.hypervisors.list())
+    @mock.patch.object(blazar_api.client, 'host_list')
+    @mock.patch.object(blazar_api.client, 'host_create')
+    @mock.patch.object(api.nova, 'hypervisor_list')
+    def test_create_hosts_with_extra_caps(self, hypervisor_list, host_create,
+                                          host_list):
         hv_hostnames = [hv.hypervisor_hostname
                         for hv in self.hypervisors.list()]
+        calls = []
         for host_name in hv_hostnames:
-            blazar_api.client.host_create(
-                IsA(http.HttpRequest),
-                name=host_name,
-                extracap="strong"
-            ).AndReturn([])
-        self.mox.ReplayAll()
+            calls.append(mock.call(test.IsHttpRequest(),
+                                   name=host_name, extracap="strong"))
         form_data = {
             'select_hosts_role_member': hv_hostnames,
             'extra_caps': '{"extracap": "strong"}'
         }
+        host_list.return_value = []
+        host_create.return_value = []
+        hypervisor_list.return_value = self.hypervisors.list()
 
         res = self.client.post(CREATE_URL, form_data)
+
+        host_list.assert_called_once_with(test.IsHttpRequest())
+        host_create.assert_has_calls(calls)
+        self.assertEqual(len(hv_hostnames), host_create.call_count)
+        hypervisor_list.assert_called_once_with(test.IsHttpRequest())
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=(len(hv_hostnames) + 1))
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({blazar_api.client: ('host_get', 'host_update')})
-    def test_update_host(self):
+    @mock.patch.object(blazar_api.client, 'host_get')
+    @mock.patch.object(blazar_api.client, 'host_update')
+    def test_update_host(self, host_update, host_get):
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        blazar_api.client.host_get(
-            IsA(http.HttpRequest),
-            host['id']
-        ).AndReturn(host)
-        blazar_api.client.host_update(
-            IsA(http.HttpRequest),
-            host_id=host['id'],
-            values={"key": "updated"}
-        )
         form_data = {
             'host_id': host['id'],
             'values': '{"key": "updated"}'
         }
-        self.mox.ReplayAll()
+        host_get.return_value = host
+        host_update.return_value = []
 
         res = self.client.post(reverse(UPDATE_URL_BASE, args=[host['id']]),
                                form_data)
+
+        host_get.assert_called_once_with(test.IsHttpRequest(), host['id'])
+        host_update.assert_called_once_with(test.IsHttpRequest(),
+                                            host_id=host['id'],
+                                            values={"key": "updated"})
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({blazar_api.client: ('host_get', 'host_update')})
-    def test_update_host_error(self):
+    @mock.patch.object(blazar_api.client, 'host_get')
+    @mock.patch.object(blazar_api.client, 'host_update')
+    def test_update_host_error(self, host_update, host_get):
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        blazar_api.client.host_get(
-            IsA(http.HttpRequest),
-            host['id']
-        ).AndReturn(host)
-        blazar_api.client.host_update(
-            IsA(http.HttpRequest),
-            host_id=host['id'],
-            values={"key": "updated"}
-        ).AndRaise(self.exceptions.blazar)
         form_data = {
             'host_id': host['id'],
             'values': '{"key": "updated"}'
         }
-        self.mox.ReplayAll()
+        host_get.return_value = host
+        host_update.side_effect = self.exceptions.blazar
 
-        res = self.client.post(reverse(UPDATE_URL_BASE, args=[host['id']]),
+        res = self.client.post(reverse(UPDATE_URL_BASE,  args=[host['id']]),
                                form_data)
+
+        host_get.assert_called_once_with(test.IsHttpRequest(), host['id'])
+        host_update.assert_called_once_with(test.IsHttpRequest(),
+                                            host_id=host['id'],
+                                            values={"key": "updated"})
         self.assertNoFormErrors(res)
         self.assertContains(res, 'An error occurred while updating')
 
-    @test.create_stubs({blazar_api.client: ('host_list', 'host_delete')})
-    def test_delete_host(self):
+    @mock.patch.object(blazar_api.client, 'host_list')
+    @mock.patch.object(blazar_api.client, 'host_delete')
+    def test_delete_host(self, host_delete, host_list):
         hosts = self.hosts.list()
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
-        blazar_api.client.host_delete(IsA(http.HttpRequest), host['id'])
-        self.mox.ReplayAll()
-
         action = 'hosts__delete__%s' % host['id']
         form_data = {'action': action}
+        host_list.return_value = hosts
+
         res = self.client.post(INDEX_URL, form_data)
+
+        host_list.assert_called_once_with(test.IsHttpRequest())
+        host_delete.assert_called_once_with(test.IsHttpRequest(), host['id'])
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({blazar_api.client: ('host_list', 'host_delete')})
-    def test_delete_host_error(self):
+    @mock.patch.object(blazar_api.client, 'host_list')
+    @mock.patch.object(blazar_api.client, 'host_delete')
+    def test_delete_host_error(self, host_delete, host_list):
         hosts = self.hosts.list()
         host = self.hosts.get(hypervisor_hostname='compute-1')
-        blazar_api.client.host_list(IsA(http.HttpRequest)).AndReturn(hosts)
-        blazar_api.client.host_delete(
-            IsA(http.HttpRequest),
-            host['id']).AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
-
         action = 'hosts__delete__%s' % host['id']
         form_data = {'action': action}
+        host_list.return_value = hosts
+        host_delete.side_effect = self.exceptions.blazar
+
         res = self.client.post(INDEX_URL, form_data)
+
+        host_list.assert_called_once_with(test.IsHttpRequest())
+        host_delete.assert_called_once_with(test.IsHttpRequest(), host['id'])
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)

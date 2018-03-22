@@ -13,8 +13,7 @@
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
-from django import http
-from mox3.mox import IsA
+import mock
 import pytz
 
 from blazar_dashboard import api
@@ -34,71 +33,83 @@ UPDATE_TEMPLATE = 'project/leases/update.html'
 
 
 class LeasesTests(test.TestCase):
-    @test.create_stubs({api.client: ('lease_list',)})
-    def test_index(self):
+    @mock.patch.object(api.client, 'lease_list')
+    def test_index(self, lease_list):
         leases = self.leases.list()
-        api.client.lease_list(IsA(http.HttpRequest)).AndReturn(leases)
-        self.mox.ReplayAll()
+        lease_list.return_value = leases
 
         res = self.client.get(INDEX_URL)
+
+        lease_list.assert_called_once_with(test.IsHttpRequest())
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertNoMessages(res)
         self.assertContains(res, 'lease-2')
         self.assertContains(res, 'lease-1')
 
-    @test.create_stubs({api.client: ('lease_list',)})
-    def test_index_no_leases(self):
-        api.client.lease_list(IsA(http.HttpRequest)).AndReturn(())
-        self.mox.ReplayAll()
+    @mock.patch.object(api.client, 'lease_list')
+    def test_index_no_leases(self, lease_list):
+        leases = []
+        lease_list.return_value = leases
 
         res = self.client.get(INDEX_URL)
+
+        lease_list.assert_called_once_with(test.IsHttpRequest())
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertNoMessages(res)
         self.assertContains(res, 'No items to display')
 
-    @test.create_stubs({api.client: ('lease_list',)})
-    def test_index_error(self):
-        api.client.lease_list(
-            IsA(http.HttpRequest)
-        ).AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
+    @mock.patch.object(api.client, 'lease_list')
+    def test_index_error(self, lease_list):
+        lease_list.side_effect = self.exceptions.blazar
 
         res = self.client.get(INDEX_URL)
+
+        lease_list.assert_called_once_with(test.IsHttpRequest())
         self.assertTemplateUsed(res, INDEX_TEMPLATE)
         self.assertMessageCount(res, error=1)
 
-    def test_lease_actions(self):
-        pass
-
-    @test.create_stubs({api.client: ('lease_get',)})
-    def test_lease_detail(self):
+    @mock.patch.object(api.client, 'lease_get')
+    def test_lease_detail(self, lease_get):
         lease = self.leases.get(name='lease-1')
-        api.client.lease_get(IsA(http.HttpRequest),
-                             lease['id']).AndReturn(lease)
-        self.mox.ReplayAll()
+        lease_get.return_value = lease
 
         res = self.client.get(reverse(DETAIL_URL_BASE, args=[lease['id']]))
+
+        lease_get.assert_called_once_with(test.IsHttpRequest(), lease['id'])
         self.assertTemplateUsed(res, DETAIL_TEMPLATE)
         self.assertContains(res, 'lease-1')
 
-    @test.create_stubs({api.client: ('lease_get',)})
-    def test_lease_detail_error(self):
-        api.client.lease_get(IsA(http.HttpRequest),
-                             'invalid').AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
+    @mock.patch.object(api.client, 'lease_get')
+    def test_lease_detail_error(self, lease_get):
+        lease_get.side_effect = self.exceptions.blazar
 
         res = self.client.get(reverse(DETAIL_URL_BASE, args=['invalid']))
+
+        lease_get.assert_called_once_with(test.IsHttpRequest(), 'invalid')
         self.assertTemplateNotUsed(res, DETAIL_TEMPLATE)
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('lease_create', )})
-    def test_create_lease_host_reservation(self):
+    @mock.patch.object(api.client, 'lease_create')
+    def test_create_lease_host_reservation(self, lease_create):
         start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
         end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
         new_lease = self.leases.get(name='lease-1')
-        api.client.lease_create(
-            IsA(http.HttpRequest),
+        form_data = {
+            'name': 'lease-1',
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
+            'resource_type': 'host',
+            'min_hosts': 1,
+            'max_hosts': 1,
+            'hypervisor_properties': '[">=", "$vcpus", "2"]'
+        }
+        lease_create.return_value = new_lease
+
+        res = self.client.post(CREATE_URL, form_data)
+
+        lease_create.assert_called_once_with(
+            test.IsHttpRequest(),
             'lease-1',
             start_date.strftime('%Y-%m-%d %H:%M'),
             end_date.strftime('%Y-%m-%d %H:%M'),
@@ -111,31 +122,32 @@ class LeasesTests(test.TestCase):
                     'resource_type': 'physical:host',
                 }
             ],
-            []
-        ).AndReturn(new_lease)
-        self.mox.ReplayAll()
-        form_data = {
-            'name': 'lease-1',
-            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
-            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
-            'resource_type': 'host',
-            'min_hosts': 1,
-            'max_hosts': 1,
-            'hypervisor_properties': '[">=", "$vcpus", "2"]'
-        }
-
-        res = self.client.post(CREATE_URL, form_data)
+            [])
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('lease_create', )})
-    def test_create_lease_instance_reservation(self):
+    @mock.patch.object(api.client, 'lease_create')
+    def test_create_lease_instance_reservation(self, lease_create):
         start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
         end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
         dummy_lease = {}
-        api.client.lease_create(
-            IsA(http.HttpRequest),
+        form_data = {
+            'name': 'lease-1',
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
+            'resource_type': 'instance',
+            'amount': 3,
+            'vcpus': 2,
+            'memory_mb': 4096,
+            'disk_gb': 128
+        }
+        lease_create.return_value = dummy_lease
+
+        res = self.client.post(CREATE_URL, form_data)
+
+        lease_create.assert_called_once_with(
+            test.IsHttpRequest(),
             'lease-1',
             start_date.strftime('%Y-%m-%d %H:%M'),
             end_date.strftime('%Y-%m-%d %H:%M'),
@@ -149,31 +161,29 @@ class LeasesTests(test.TestCase):
                     'affinity': False
                 }
             ],
-            []
-        ).AndReturn(dummy_lease)
-        self.mox.ReplayAll()
-        form_data = {
-            'name': 'lease-1',
-            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
-            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
-            'resource_type': 'instance',
-            'amount': 3,
-            'vcpus': 2,
-            'memory_mb': 4096,
-            'disk_gb': 128
-        }
-
-        res = self.client.post(CREATE_URL, form_data)
+            [])
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('lease_create', )})
-    def test_create_lease_client_error(self):
+    @mock.patch.object(api.client, 'lease_create')
+    def test_create_lease_client_error(self, lease_create):
         start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
         end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
-        api.client.lease_create(
-            IsA(http.HttpRequest),
+        form_data = {
+            'name': 'lease-1',
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
+            'resource_type': 'host',
+            'min_hosts': 1,
+            'max_hosts': 1,
+        }
+        lease_create.side_effect = self.exceptions.blazar
+
+        res = self.client.post(CREATE_URL, form_data)
+
+        lease_create.assert_called_once_with(
+            test.IsHttpRequest(),
             'lease-1',
             start_date.strftime('%Y-%m-%d %H:%M'),
             end_date.strftime('%Y-%m-%d %H:%M'),
@@ -186,126 +196,112 @@ class LeasesTests(test.TestCase):
                     'resource_type': 'physical:host',
                 }
             ],
-            []
-        ).AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
-        form_data = {
-            'name': 'lease-1',
-            'start_date': start_date.strftime('%Y-%m-%d %H:%M'),
-            'end_date': end_date.strftime('%Y-%m-%d %H:%M'),
-            'resource_type': 'host',
-            'min_hosts': 1,
-            'max_hosts': 1,
-        }
-
-        res = self.client.post(CREATE_URL, form_data)
+            [])
         self.assertTemplateUsed(res, CREATE_TEMPLATE)
         self.assertNoFormErrors(res)
         self.assertContains(res, 'An error occurred while creating')
 
-    @test.create_stubs({api.client: ('lease_get', 'lease_update')})
-    def test_update_lease_name_and_date(self):
+    @mock.patch.object(api.client, 'lease_get')
+    @mock.patch.object(api.client, 'lease_update')
+    def test_update_lease_name_and_date(self, lease_update, lease_get):
         lease = self.leases.get(name='lease-1')
-        api.client.lease_get(
-            IsA(http.HttpRequest),
-            lease['id']
-        ).AndReturn(lease)
-        api.client.lease_update(
-            IsA(http.HttpRequest),
-            lease_id=lease['id'],
-            name='newname',
-            prolong_for='1h'
-        )
         form_data = {
             'lease_id': lease['id'],
             'lease_name': 'newname',
             'end_time': '+1h'
         }
-        self.mox.ReplayAll()
+        lease_get.return_value = lease
 
         res = self.client.post(reverse(UPDATE_URL_BASE, args=[lease['id']]),
                                form_data)
+
+        lease_get.assert_called_once_with(test.IsHttpRequest(), lease['id'])
+        lease_update.assert_called_once_with(test.IsHttpRequest(),
+                                             lease_id=lease['id'],
+                                             name='newname',
+                                             prolong_for='1h')
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('lease_get', 'lease_update')})
-    def test_update_lease_reservations(self):
+    @mock.patch.object(api.client, 'lease_get')
+    @mock.patch.object(api.client, 'lease_update')
+    def test_update_lease_reservations(self, lease_update, lease_get):
         lease = self.leases.get(name='lease-1')
-        api.client.lease_get(
-            IsA(http.HttpRequest),
-            lease['id']
-        ).AndReturn(lease)
-        api.client.lease_update(
-            IsA(http.HttpRequest),
-            lease_id=lease['id'],
-            reservations=[{"id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",
-                           "max": 3}]
-        )
         form_data = {
             'lease_id': lease['id'],
             'reservations': '[{"id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",'
                             ' "max": 3}]'
         }
-        self.mox.ReplayAll()
+        lease_get.return_value = lease
 
         res = self.client.post(reverse(UPDATE_URL_BASE, args=[lease['id']]),
                                form_data)
+
+        lease_get.assert_called_once_with(test.IsHttpRequest(), lease['id'])
+        lease_update.assert_called_once_with(
+            test.IsHttpRequest(),
+            lease_id=lease['id'],
+            reservations=[{
+                "id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",
+                "max": 3}])
         self.assertNoFormErrors(res)
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('lease_get', 'lease_update')})
-    def test_update_lease_error(self):
+    @mock.patch.object(api.client, 'lease_get')
+    @mock.patch.object(api.client, 'lease_update')
+    def test_update_lease_error(self, lease_update, lease_get):
         lease = self.leases.get(name='lease-1')
-        api.client.lease_get(
-            IsA(http.HttpRequest),
-            lease['id']
-        ).AndReturn(lease)
-        api.client.lease_update(
-            IsA(http.HttpRequest),
-            lease_id=lease['id'],
-            name='newname',
-            prolong_for='1h'
-        ).AndRaise(self.exceptions.blazar)
         form_data = {
             'lease_id': lease['id'],
             'lease_name': 'newname',
             'end_time': '+1h'
         }
-        self.mox.ReplayAll()
+        lease_get.return_value = lease
+        lease_update.side_effect = self.exceptions.blazar
 
         res = self.client.post(reverse(UPDATE_URL_BASE, args=[lease['id']]),
                                form_data)
+
+        lease_get.assert_called_once_with(test.IsHttpRequest(), lease['id'])
+        lease_update.assert_called_once_with(test.IsHttpRequest(),
+                                             lease_id=lease['id'],
+                                             name='newname',
+                                             prolong_for='1h')
         self.assertTemplateUsed(UPDATE_TEMPLATE)
         self.assertNoFormErrors(res)
         self.assertContains(res, 'An error occurred while updating')
 
-    @test.create_stubs({api.client: ('lease_list', 'lease_delete')})
-    def test_delete_lease(self):
+    @mock.patch.object(api.client, 'lease_list')
+    @mock.patch.object(api.client, 'lease_delete')
+    def test_delete_lease(self, lease_delete, lease_list):
         leases = self.leases.list()
         lease = self.leases.get(name='lease-1')
-        api.client.lease_list(IsA(http.HttpRequest)).AndReturn(leases)
-        api.client.lease_delete(IsA(http.HttpRequest), lease['id'])
-        self.mox.ReplayAll()
-
         action = 'leases__delete__%s' % lease['id']
         form_data = {'action': action}
+        lease_list.return_value = leases
+
         res = self.client.post(INDEX_URL, form_data)
+
+        lease_list.assert_called_once_with(test.IsHttpRequest())
+        lease_delete.assert_called_once_with(test.IsHttpRequest(), lease['id'])
         self.assertMessageCount(success=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
 
-    @test.create_stubs({api.client: ('lease_list', 'lease_delete')})
-    def test_delete_lease_error(self):
+    @mock.patch.object(api.client, 'lease_list')
+    @mock.patch.object(api.client, 'lease_delete')
+    def test_delete_lease_error(self, lease_delete, lease_list):
         leases = self.leases.list()
         lease = self.leases.get(name='lease-1')
-        api.client.lease_list(IsA(http.HttpRequest)).AndReturn(leases)
-        api.client.lease_delete(IsA(http.HttpRequest),
-                                lease['id']).AndRaise(self.exceptions.blazar)
-        self.mox.ReplayAll()
-
         action = 'leases__delete__%s' % lease['id']
         form_data = {'action': action}
+        lease_list.return_value = leases
+        lease_delete.side_effect = self.exceptions.blazar
+
         res = self.client.post(INDEX_URL, form_data)
+
+        lease_list.assert_called_once_with(test.IsHttpRequest())
+        lease_delete.assert_called_once_with(test.IsHttpRequest(), lease['id'])
         self.assertMessageCount(error=1)
         self.assertRedirectsNoFollow(res, INDEX_URL)
