@@ -138,6 +138,7 @@ function capabilitiesjs() {
             xhr.open('GET', '{% url "horizon:project:leases:extra_values" name="NAME" %}'.replace('NAME', name_selector.value), true);
             xhr.send();
         }
+        setDefaultNodeType();
     }
 
     function fillCriteriaValues(element, name) {
@@ -145,14 +146,17 @@ function capabilitiesjs() {
         values.sort();
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
-        });
+        });        
+    }
+
+    function setDefaultNodeType(){
         var nodeOptions = $("#resource-node-type");
         console.log("getting node options in widget capabilitiesjs")
         try {
-          nodeOptions.find("[value='compute_haswell']").attr("selected","selected");
+          nodeOptions.find('[value="compute_haswell"]').attr("selected","selected");
         } catch(err) {
           console.error(err);
-        }        
+        }
     }
 
     function removeCriterion(event) {

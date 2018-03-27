@@ -61,14 +61,6 @@
             $('#timezone').hide();
         }
 
-        var nodeOptions = $("#resource-node-type");
-        console.log("getting node options")
-        try {
-          nodeOptions.find("[value='compute_haswell']").attr("selected","selected");
-        } catch(err) {
-          console.error(err);
-        }
-
 
     })(window, horizon, jQuery);
 </script>
