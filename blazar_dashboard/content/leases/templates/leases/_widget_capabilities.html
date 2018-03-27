@@ -146,6 +146,13 @@ function capabilitiesjs() {
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
         });
+        var nodeOptions = $("#resource-node-type");
+        console.log("getting node options in widget capabilitiesjs")
+        try {
+          nodeOptions.find("[value='compute_haswell']").attr("selected","selected");
+        } catch(err) {
+          console.error(err);
+        }        
     }
 
     function removeCriterion(event) {
