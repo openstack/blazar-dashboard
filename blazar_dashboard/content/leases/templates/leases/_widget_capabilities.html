@@ -138,7 +138,6 @@ function capabilitiesjs() {
             xhr.open('GET', '{% url "horizon:project:leases:extra_values" name="NAME" %}'.replace('NAME', name_selector.value), true);
             xhr.send();
         }
-        setDefaultNodeType();
     }
 
     function fillCriteriaValues(element, name) {
@@ -146,7 +145,8 @@ function capabilitiesjs() {
         values.sort();
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
-        });        
+        });
+        setDefaultNodeType();
     }
 
     function setDefaultNodeType(){
@@ -154,6 +154,7 @@ function capabilitiesjs() {
         console.log("getting node options in widget capabilitiesjs")
         try {
           nodeOptions.find('[value="compute_haswell"]').attr("selected","selected");
+          console.log("node options in widget capabilitiesjs found: " + nodeOptions);
         } catch(err) {
           console.error(err);
         }
