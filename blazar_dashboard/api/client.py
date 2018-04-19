@@ -168,11 +168,10 @@ def get_cursor_for_request(request):
     Get a cursor for the database in the request's region
 
     The DATABASES setting must be configured with all the regions to be used
-    named like "blazar-dev.tacc.chameleoncloud.org:5000" and so on.
+    named like "blazar-CHI@TACC", "blazar-CHI@UC", and so on.
     """
-    endpoint = request.session.get('region_endpoint')
-    host_port = urlparse(endpoint).netloc
-    connection = connections['blazar-' + host_port]
+    region = request.session.get('services_region')
+    connection = connections['blazar-' + region]
     return connection.cursor()
 
 
