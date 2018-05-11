@@ -97,17 +97,6 @@ class CreateForm(forms.SelfHandlingForm):
             'data-source-host': _('Hypervisor Properties'),
             'placeholder': 'e.g. [">=", "$vcpus", "2"]'})
     )
-    resource_properties = forms.CharField(
-        label=_("Resource Properties"),
-        required=False,
-        help_text=_('Enter properties of a resource to reserve.'),
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Resource Properties'),
-            'placeholder': 'e.g. ["==", "$extra_key", "extra_value"]'})
-    )
 
     # Fields for instance reservation
     amount = forms.IntegerField(
@@ -155,6 +144,16 @@ class CreateForm(forms.SelfHandlingForm):
             'data-source-instance': _('Root Disk (GB)')})
     )
 
+    # Fields for both of host and instance reservations
+    resource_properties = forms.CharField(
+        label=_("Resource Properties"),
+        required=False,
+        help_text=_('Enter properties of a resource to reserve.'),
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'e.g. ["==", "$extra_key", "extra_value"]'})
+    )
+
     def handle(self, request, data):
         if data['resource_type'] == 'host':
             reservations = [
@@ -175,7 +174,8 @@ class CreateForm(forms.SelfHandlingForm):
                     'vcpus': data['vcpus'],
                     'memory_mb': data['memory_mb'],
                     'disk_gb': data['disk_gb'],
-                    'affinity': False
+                    'affinity': False,
+                    'resource_properties': data['resource_properties'] or ''
                 }
             ]
 
