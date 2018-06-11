@@ -55,7 +55,10 @@ class OverviewTab(tabs.Tab):
             msg = _('Unable to retrieve nodes in lease.')
             exceptions.handle(request, msg, redirect=redirect)
 
-        site = getattr(settings, 'CHAMELEON_SITE', None)
+        site = None
+        sites = getattr(settings, 'CHAMELEON_SITES')
+        if sites:
+            site = sites.get(request.session.get('services_region'))
         return {'lease': lease, 'nodes': nodes, 'site': site,
                 'reservation_generals': RESERVATION_GENERALS}
 
