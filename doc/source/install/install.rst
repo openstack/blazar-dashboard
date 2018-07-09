@@ -5,7 +5,8 @@ Installation
 Enabling in DevStack
 ====================
 
-* Not yet supported
+The DevStack plugin for Blazar automatically sets up blazar-dashboard if
+Horizon is enabled, which is the case by default.
 
 Manual Installation
 ===================
