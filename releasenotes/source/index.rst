@@ -6,4 +6,5 @@ blazar_dashboard Release Notes
    :maxdepth: 1
 
    unreleased
+   rocky
    queens
