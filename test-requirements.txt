@@ -22,3 +22,4 @@ openstack.nose-plugin>=0.7 # Apache-2.0
 reno>=1.8.0,!=2.3.1  # Apache-2.0
 sphinx>=1.6.2  # BSD
 testtools>=1.4.0 # MIT
+http://tarballs.openstack.org/horizon/horizon-stable-pike.tar.gz#egg=horizon
