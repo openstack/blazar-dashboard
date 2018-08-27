@@ -16,10 +16,6 @@ from openstack_dashboard.test import helpers
 from blazar_dashboard.test.test_data import utils
 
 
-def create_stubs(stubs_to_create={}):
-    return helpers.create_stubs(stubs_to_create)
-
-
 class TestCase(helpers.TestCase):
     def _setup_test_data(self):
         super(TestCase, self)._setup_test_data()
