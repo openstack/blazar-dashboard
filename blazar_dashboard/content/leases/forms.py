@@ -286,6 +286,27 @@ class UpdateForm(forms.SelfHandlingForm):
                    ']'}),
         max_length=511,
         required=False)
+    # Fields for host reservation
+    min_hosts = forms.IntegerField(
+        label=_('Minimum Number of Hosts'),
+        required=False,
+        help_text=_('Enter the updated minimum number of hosts to reserve.'),
+        min_value=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-host': _('Minimum Number of Hosts')})
+    )
+    max_hosts = forms.IntegerField(
+        label=_('Maximum Number of Hosts'),
+        required=False,
+        help_text=_('Enter the updated maximum number of hosts to reserve.'),
+        min_value=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-host': _('Maximum Number of Hosts')})
+    )
 
     # def __init__(self, request, *args, **kwargs):
     #     super(UpdateForm, self).__init__(request, *args, **kwargs)
@@ -327,6 +348,26 @@ class UpdateForm(forms.SelfHandlingForm):
         elif net_mins < 0:
             fields['reduce_by'] = min_string
 
+        min_hosts = data.get('min_hosts')
+        max_hosts = data.get('max_hosts')
+        if min_hosts and max_hosts:
+            try:
+                min_hosts = int(data.get('min_hosts'))
+                max_hosts = int(data.get('max_hosts'))
+            except ValueError as e:
+                logger.error('Error updating lease: %s', e)
+                exceptions.handle(request, message="Invalid value provided.")
+                return
+
+            lease = api.client.lease_get(self.request, lease_id)
+            fields['reservations'] = lease['reservations']
+            if len(fields['reservations']) != 1:
+                messages.error(request, "Cannot update node count for a lease "
+                                        "with multiple reservations.")
+                return
+            fields['reservations'][0]['min'] = min_hosts
+            fields['reservations'][0]['max'] = min_hosts
+
         # start_time = data.get('start_time', None)
         # end_time = data.get('end_time', None)
         # if start_time:
@@ -351,8 +392,8 @@ class UpdateForm(forms.SelfHandlingForm):
         except Exception as e:
             LOG.error('Error updating lease: %s', e)
             exceptions.handle(request,
-                              message="An error occurred while updating this"
-                                      " lease: %s. Please try again." % e)
+                              message="An error occurred while updating this "
+                                      "lease: %s. Please try again." % e)
 
     def clean(self):
         cleaned_data = super(UpdateForm, self).clean()
@@ -360,6 +401,12 @@ class UpdateForm(forms.SelfHandlingForm):
         lease_name = cleaned_data.get("lease_name")
         prolong_for = cleaned_data.get("prolong_for")
         reduce_by = cleaned_data.get("reduce_by")
+        min_hosts = cleaned_data.get("min_hosts")
+        max_hosts = cleaned_data.get("max_hosts")
 
-        if not (lease_name or prolong_for or reduce_by):
+        if not (lease_name or prolong_for or reduce_by or min_hosts or max_hosts):
             raise forms.ValidationError("Nothing to update.")
+
+        if (min_hosts or max_hosts) and not (min_hosts and max_hosts):
+            raise forms.ValidationError("You must provide both min_hosts and "
+                                        "max_hosts.")
