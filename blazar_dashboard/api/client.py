@@ -27,7 +27,6 @@ from openstack_dashboard.api import base
 from blazarclient import client as blazar_client
 
 
-NOT_DELETED = ''
 LOG = logging.getLogger(__name__)
 LEASE_DATE_FORMAT = "%Y-%m-%d %H:%M"
 
@@ -193,8 +192,7 @@ def compute_host_available(request, start_date, end_date):
             join reservations r on r.id = cha.`reservation_id`
             join leases l on l.`id` = r.`lease_id`
             where
-                r.deleted="" and
-                ch.deleted="" and
+                r.deleted IS NULL and
                 ((l.`start_date` > %s and l.`start_date` < %s)
                 or (l.`end_date` > %s and l.`end_date` < %s)
                 or (l.`start_date` < %s and l.`end_date` > %s))
@@ -218,7 +216,7 @@ def node_in_lease(request, lease_id, active_only=True):
         l.id = %s
     '''
     if active_only:
-        sql += " AND ca.deleted = '{}'".format(NOT_DELETED)
+        sql += " AND ca.deleted IS NULL"
     sql_args = (lease_id,)
 
     cursor = get_cursor_for_request(request)
@@ -239,8 +237,6 @@ def compute_host_list(request, node_types=False):
         hypervisor_type
     FROM
         computehosts
-    WHERE
-        deleted = ""
     '''
     cursor = get_cursor_for_request(request)
     cursor.execute(sql)
@@ -266,7 +262,7 @@ def node_type_map(request=None, cursor=None):
         INNER JOIN (
             SELECT id, MAX(created_at)
             FROM blazar.computehost_extra_capabilities
-            WHERE capability_name = 'node_type' AND deleted = ''
+            WHERE capability_name = 'node_type'
             GROUP BY computehost_id
         ) AS exl
         ON ex.id = exl.id
@@ -296,9 +292,8 @@ def reservation_calendar(request):
         JOIN reservations r ON r.id = cha.reservation_id
         JOIN leases l ON l.id = r.lease_id
     WHERE
-        r.deleted = ''
-        AND c.deleted = ''
-        AND cha.deleted = ''
+        r.deleted IS NULL
+        AND cha.deleted IS NULL
     ORDER BY
         start_date,
         project_id;
@@ -319,10 +314,8 @@ def extra_capability_names(request):
         capability_name
     FROM
         computehost_extra_capabilities
-    WHERE
-        deleted = %s
     '''
-    cursor.execute(sql, [NOT_DELETED])
+    cursor.execute(sql)
     # available = dictfetchall(cursor)
     available = [row[0] for row in cursor.fetchall()]
     return available
@@ -347,8 +340,7 @@ def extra_capability_values(request, name):
         computehost_extra_capabilities
     WHERE
         capability_name = %s
-        AND deleted = %s;
     '''
-    cursor.execute(sql, [name, NOT_DELETED])
+    cursor.execute(sql, [name])
     rows = dictfetchall(cursor)
     return rows
