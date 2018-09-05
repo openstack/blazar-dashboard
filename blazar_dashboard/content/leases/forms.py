@@ -58,6 +58,16 @@ class CreateForm(forms.SelfHandlingForm):
         widget=forms.DateTimeInput(attrs={'placeholder':'Now'}),
         required=False,
     )
+    number_of_days = forms.IntegerField(
+        label=_("Reservation Length in Days"),
+        required=False,
+        help_text=_('Number of days for this reservation.'),
+        error_messages={
+            'invalid': _('Value should be a whole number'),
+        },
+        widget=forms.DateTimeInput(
+            attrs={'placeholder':'Number of Days'}),
+    )
     end_date = forms.DateTimeField(
         label=_("End Date"),
         required=False,

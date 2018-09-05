@@ -46,7 +46,13 @@
     (function(window, horizon, $, undefined) {
         'use strict';
 
-        $('.datepicker').datepicker({
+        $('#id_start_date').datepicker({
+            format: 'yyyy-mm-dd',
+            todayHighlight: true,
+            autoclose: true
+        });
+
+        $('#id_end_date').datepicker({
             format: 'yyyy-mm-dd',
             todayHighlight: true,
             autoclose: true
@@ -61,6 +67,24 @@
             $('#timezone').hide();
         }
 
+        $('#id_number_of_days, #id_start_date, #id_start_time').on('blur', function(event){
+            var numberOfDays = $('#id_number_of_days').val();
+            if (event.hasOwnProperty('originalEvent') && numberOfDays != ''){
+                setEndDateTime();
+            }
+        });
+
+        function setEndDateTime(){
+            var startDate = $('#id_start_date').datepicker('getDate');
+            if(startDate == 'Invalid Date'){
+                startDate = new Date();
+            }
+
+            var leaseLength = parseInt($('#id_number_of_days').val(), 0);
+            var result = new Date(startDate);
+            result.setDate(result.getDate() + leaseLength);
+            $('#id_end_date').datepicker('setDate', result);
+        }
 
     })(window, horizon, jQuery);
 </script>
