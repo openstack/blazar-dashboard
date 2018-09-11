@@ -62,6 +62,7 @@ class CreateForm(forms.SelfHandlingForm):
         label=_("Reservation Length in Days"),
         required=False,
         help_text=_('Number of days for this reservation.'),
+        initial=1,
         error_messages={
             'invalid': _('Value should be a whole number'),
         },
