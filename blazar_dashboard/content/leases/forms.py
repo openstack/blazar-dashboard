@@ -72,7 +72,7 @@ class CreateForm(forms.SelfHandlingForm):
     end_date = forms.DateTimeField(
         label=_("End Date"),
         required=False,
-        help_text=_('Enter date with the format YYYY-MM-DD or leave blank for tomorrow'),
+        help_text=_('Date is calculated from the start date and duration.'),
         error_messages={
             'invalid': _('Value should be date, formatted YYYY-MM-DD'),
         },

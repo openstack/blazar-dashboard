@@ -52,12 +52,7 @@
             autoclose: true
         });
 
-        $('#id_end_date').datepicker({
-            format: 'yyyy-mm-dd',
-            todayHighlight: true,
-            autoclose: true,
-        });
-        $('#id_end_date').prop('disabled', true);
+        $('#id_end_date').attr('readonly', 'readonly');
 
         var offset = new Date().getTimezoneOffset();
         var cookie_offset = $('#cookie_offset').val();
@@ -88,8 +83,20 @@
             }
             var result = new Date(startDate);
             result.setDate(result.getDate() + leaseLength);
-            $('#id_end_date').datepicker('setDate', result);
-            console.log('setting disabled');
+
+            $('#id_end_date').val(formatDate(result));
+        }
+
+        function formatDate(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
         }
 
     })(window, horizon, jQuery);
