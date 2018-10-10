@@ -26,12 +26,6 @@ LOG = logging.getLogger(__name__)
 
 class Lease(base.APIDictWrapper):
     """Represents one Blazar lease."""
-    ACTIONS = (CREATE, DELETE, UPDATE, START, STOP
-               ) = ('CREATE', 'DELETE', 'UPDATE', 'START', 'STOP')
-
-    STATUSES = (IN_PROGRESS, FAILED, COMPLETE
-                ) = ('IN_PROGRESS', 'FAILED', 'COMPLETE')
-
     _attrs = ['id', 'name', 'start_date', 'end_date', 'user_id', 'project_id',
               'before_end_date', 'status', 'degraded']
 
