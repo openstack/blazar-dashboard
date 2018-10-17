@@ -61,7 +61,7 @@ class CreateForm(forms.SelfHandlingForm):
     number_of_days = forms.IntegerField(
         label=_("Reservation Length in Days"),
         required=False,
-        help_text=_('Number of days for this reservation.'),
+        help_text=_('Set to zero to schedule leases starting and ending on the same day'),
         initial=1,
         error_messages={
             'invalid': _('Value should be a whole number'),
