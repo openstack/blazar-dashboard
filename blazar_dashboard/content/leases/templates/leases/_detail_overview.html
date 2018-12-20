@@ -69,6 +69,7 @@
     {% endfor %}
   </div>
 
+{% if nodes %}
   <div class="info detail">
     <h4>{% trans "Nodes" %}</h4>
     <hr class="header_rule">
@@ -87,4 +88,5 @@
       {% endfor %}
     </dl>
   </div>
+{% endif %}
 </div>
