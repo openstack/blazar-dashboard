@@ -90,6 +90,17 @@ class CreateForm(forms.SelfHandlingForm):
         widget=forms.DateTimeInput(attrs={'placeholder':'Same time as now'}),
         required=False,
     )
+    resource_type = forms.ChoiceField(
+        label=_("Resource Type"),
+        required=True,
+        choices=(
+            ('host', _('Physical Host')),
+            ('network', _('Network'))
+        ),
+        widget=forms.ThemableSelectWidget(attrs={
+            'class': 'switchable',
+            'data-slug': 'source'}))
+
     # Fields for host reservation
     min_hosts = forms.IntegerField(
         label=_('Minimum Number of Hosts'),
@@ -113,12 +124,26 @@ class CreateForm(forms.SelfHandlingForm):
             'data-switch-on': 'source',
             'data-source-host': _('Maximum Number of Hosts')})
     )
+
+    network_name = forms.CharField(
+        label=_('Network Name'),
+        required=False,
+        help_text=_('Name to use when creating the Neutron network.'),
+        widget=forms.TextInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-network': _('Network Name')})
+    )
+
     resource_properties = forms.CharField(
         label=_("Resource Properties"),
         required=False,
         help_text=_('Choose properties of the resource(s) to reserve.'),
         max_length=1024,
-        widget=widgets.CapabilityWidget,
+        widget=widgets.CapabilityWidget(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-host': _('Resource Properties')})
     )
     affinity = forms.ChoiceField(
         label=_("Affinity Rule"),
@@ -146,7 +171,6 @@ class CreateForm(forms.SelfHandlingForm):
     )
 
     def handle(self, request, data):
-        data['resource_type'] = 'host' # All Chameleon needs.
         if data['resource_type'] == 'host':
             reservations = [
                 {
@@ -167,6 +191,15 @@ class CreateForm(forms.SelfHandlingForm):
                     'disk_gb': data['disk_gb'],
                     'affinity': data['affinity'],
                     'resource_properties': data['resource_properties'] or ''
+                }
+            ]
+        elif data['resource_type'] == 'network':
+            reservations = [
+                {
+                    'resource_type': 'network',
+                    'network_name': data['network_name'],
+                    'network_properties': '',
+                    'resource_properties': '',
                 }
             ]
 
@@ -246,7 +279,8 @@ class CreateForm(forms.SelfHandlingForm):
         num_hosts = api.client.compute_host_available(self.request,
                                                       cleaned_data['start_date'],
                                                       cleaned_data['end_date'])
-        if cleaned_data['min_hosts'] > num_hosts:
+        if (cleaned_data['resource_type'] == 'host' and
+            cleaned_data['min_hosts'] > num_hosts):
             raise forms.ValidationError(_(
                 "Not enough hosts are available for this reservation (minimum "
                 "%s requested; %s available). Try adjusting the number of "
@@ -319,17 +353,15 @@ class UpdateForm(forms.SelfHandlingForm):
             'data-source-host': _('Maximum Number of Hosts')})
     )
 
-    # def __init__(self, request, *args, **kwargs):
-    #     super(UpdateForm, self).__init__(request, *args, **kwargs)
-    #     for reservation in kwargs['initial']['lease'].reservations:
-    #         if reservation['resource_type'] == 'virtual:instance':
-    #             # Hide the start/end_time because they cannot be updated if at
-    #             # least one virtual:instance reservation is included.
-    #             # TODO(hiro-kobayashi) remove this part if virtual:instance
-    #             # reservation gets to support update of the start/end_time.
-    #             del self.fields['start_time']
-    #             del self.fields['end_time']
-    #             return
+    def __init__(self, request, *args, **kwargs):
+        super(UpdateForm, self).__init__(request, *args, **kwargs)
+        for reservation in kwargs['initial']['lease'].reservations:
+            if reservation['resource_type'] != 'physical:host':
+                # Hide the min_hosts/max_hosts when resource_type is not
+                # physical:host
+                del self.fields['min_hosts']
+                del self.fields['max_hosts']
+                return
 
     def handle(self, request, data):
         lease_id = data.get('lease_id')

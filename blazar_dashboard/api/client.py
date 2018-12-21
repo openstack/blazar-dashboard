@@ -318,7 +318,18 @@ def extra_capability_names(request):
     cursor.execute(sql)
     # available = dictfetchall(cursor)
     available = [row[0] for row in cursor.fetchall()]
-    return available
+
+    cursor = get_cursor_for_request(request)
+    sql = '''\
+    SELECT DISTINCT
+        capability_name
+    FROM
+        networksegment_extra_capabilities
+    '''
+    cursor.execute(sql)
+    # available = dictfetchall(cursor)
+    available += [row[0] for row in cursor.fetchall()]
+    return list(set(available))
 
 
 def extra_capability_values(request, name):
@@ -343,4 +354,17 @@ def extra_capability_values(request, name):
     '''
     cursor.execute(sql, [name])
     rows = dictfetchall(cursor)
+
+    cursor = get_cursor_for_request(request)
+    sql = '''\
+    SELECT
+        id, network_id, capability_name, capability_value
+    FROM
+        networksegment_extra_capabilities
+    WHERE
+        capability_name = %s
+    '''
+    cursor.execute(sql, [name])
+    rows += dictfetchall(cursor)
+
     return rows
