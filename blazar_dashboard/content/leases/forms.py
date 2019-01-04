@@ -156,7 +156,7 @@ class CreateForm(forms.SelfHandlingForm):
             'class': 'switched',
             'data-switch-on': 'source',
             'data-source-instance': _('Affinity Rule')})
-        )
+    )
 
     # Fields for both of host and instance reservations
     resource_properties = forms.CharField(
@@ -175,8 +175,8 @@ class CreateForm(forms.SelfHandlingForm):
                     'resource_type': 'physical:host',
                     'min': data['min_hosts'],
                     'max': data['max_hosts'],
-                    'hypervisor_properties': (data['hypervisor_properties']
-                                              or ''),
+                    'hypervisor_properties': (data['hypervisor_properties'] or
+                                              ''),
                     'resource_properties': data['resource_properties'] or ''
                 }
             ]
@@ -227,8 +227,8 @@ class CreateForm(forms.SelfHandlingForm):
                 cleaned_data['end_date'].replace(tzinfo=None)
             ).astimezone(timezone('UTC'))
         else:
-            cleaned_data['end_date'] = (cleaned_data['start_date']
-                                        + datetime.timedelta(days=1))
+            cleaned_data['end_date'] = (cleaned_data['start_date'] +
+                                        datetime.timedelta(days=1))
 
 
 class UpdateForm(forms.SelfHandlingForm):

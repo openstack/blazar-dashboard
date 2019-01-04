@@ -22,6 +22,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from blazar_dashboard.version import version_info as blazar_dashboard_version
+
 # -- General configuration ----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -60,7 +62,6 @@ copyright = u'2017, OpenStack Foundation'
 # built documents.
 #
 # Version info
-from blazar_dashboard.version import version_info as blazar_dashboard_version
 release = blazar_dashboard_version.release_string()
 # The short X.Y version.
 version = blazar_dashboard_version.version_string()

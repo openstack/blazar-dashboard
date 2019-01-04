@@ -14,15 +14,15 @@
 from horizon.test.settings import *  # noqa: F403,H303
 from openstack_dashboard.test.settings import *  # noqa: F403,H303
 
-# pop these keys to avoid log warnings about deprecation
-# update_dashboards will populate them anyway
-HORIZON_CONFIG.pop('dashboards', None)
-HORIZON_CONFIG.pop('default_dashboard', None)
-
 # Update the dashboards with blazar_dashboard
 import blazar_dashboard.enabled
 import openstack_dashboard.enabled
 from openstack_dashboard.utils import settings
+
+# pop these keys to avoid log warnings about deprecation
+# update_dashboards will populate them anyway
+HORIZON_CONFIG.pop('dashboards', None)
+HORIZON_CONFIG.pop('default_dashboard', None)
 
 settings.update_dashboards(
     [

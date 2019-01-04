@@ -176,7 +176,7 @@ class HostsTests(test.BaseAdminViewTests):
         host_get.return_value = host
         host_update.side_effect = self.exceptions.blazar
 
-        res = self.client.post(reverse(UPDATE_URL_BASE,  args=[host['id']]),
+        res = self.client.post(reverse(UPDATE_URL_BASE, args=[host['id']]),
                                form_data)
 
         host_get.assert_called_once_with(test.IsHttpRequest(), host['id'])
