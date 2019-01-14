@@ -61,6 +61,14 @@ class ViewLeaseCalendar(tables.LinkAction):
     icon = "calendar"
 
 
+class ViewNetworkReservationCalendar(tables.LinkAction):
+    name = "network_calendar"
+    verbose_name = _("Network Reservation Calendar")
+    url = "horizon:project:leases:network_calendar"
+    classes = ("btn-default", )
+    icon = "calendar"
+
+
 class DeleteLease(tables.DeleteAction):
     name = "delete"
     data_type_singular = _("Lease")
@@ -106,5 +114,6 @@ class LeasesTable(tables.DataTable):
     class Meta(object):
         name = "leases"
         verbose_name = _("Leases")
-        table_actions = (ViewLeaseCalendar, CreateLease, DeleteLease, )
+        table_actions = (ViewLeaseCalendar, ViewNetworkReservationCalendar,
+                         CreateLease, DeleteLease, )
         row_actions = (UpdateLease, DeleteLease, )

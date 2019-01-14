@@ -28,4 +28,5 @@ ADD_SCSS_FILES = [
 ADD_JS_FILES = [
     'leases/js/vendor/d3.gantt.js',
     'leases/js/lease_gantt.js',
+    'leases/js/network_gantt.js',
 ]

@@ -304,6 +304,52 @@ def reservation_calendar(request):
     return host_reservations
 
 
+def network_list(request):
+    """Return a list of networks available for reservation"""
+    sql = '''\
+    SELECT
+        physical_network,
+        segment_id
+    FROM
+        network_segments
+    '''
+    cursor = get_cursor_for_request(request)
+    cursor.execute(sql)
+    networks = dictfetchall(cursor)
+
+    return networks
+
+
+def network_reservation_calendar(request):
+    """Return a list of all scheduled leases."""
+    cursor = get_cursor_for_request(request)
+    sql = '''\
+    SELECT
+        l.name,
+        l.project_id,
+        l.start_date,
+        l.end_date,
+        r.id,
+        r.status,
+        n.segment_id
+    FROM
+        network_allocations na
+        JOIN network_segments n ON n.id = na.network_id
+        JOIN reservations r ON r.id = na.reservation_id
+        JOIN leases l ON l.id = r.lease_id
+    WHERE
+        r.deleted IS NULL
+        AND na.deleted IS NULL
+    ORDER BY
+        start_date,
+        project_id;
+    '''
+    cursor.execute(sql)
+    host_reservations = dictfetchall(cursor)
+
+    return host_reservations
+
+
 def extra_capability_names(request):
     """
     Return all the names for possible selections.

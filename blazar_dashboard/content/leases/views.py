@@ -57,6 +57,18 @@ def calendar_data_view(request):
     return JsonResponse(data)
 
 
+class NetworkCalendarView(views.APIView):
+    template_name = 'project/leases/network_calendar.html'
+
+
+def network_calendar_data_view(request):
+    data = {}
+    data['networks'] = api.client.network_list(request)
+    data['reservations'] = api.client.network_reservation_calendar(request)
+
+    return JsonResponse(data)
+
+
 def extra_capability_names(request):
     data = {
         'extra_capability_names': api.client.extra_capability_names(request),

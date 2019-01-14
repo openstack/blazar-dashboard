@@ -22,6 +22,9 @@ urlpatterns = [
     url(r'^calendar/$', leases_views.CalendarView.as_view(), name='calendar'),
     url(r'^calendar\.json$', leases_views.calendar_data_view, name='calendar_data'),
 
+    url(r'^network_calendar/$', leases_views.NetworkCalendarView.as_view(), name='network_calendar'),
+    url(r'^network_calendar\.json$', leases_views.network_calendar_data_view, name='network_calendar_data'),
+
     url(r'^extras/names$', leases_views.extra_capability_names, name='extra_names'),
     url(r'^extras/values/(?P<name>[^/]+)$',
         leases_views.extra_capability_values,
