@@ -55,7 +55,7 @@ class UpdateLease(tables.LinkAction):
 class ViewLeaseCalendar(tables.LinkAction):
     ## TODO(nicktimko) move calendar to a panel
     name = "calendar"
-    verbose_name = _("Lease Calendar")
+    verbose_name = _("Host Calendar")
     url = "horizon:project:leases:calendar"
     classes = ("btn-default", )
     icon = "calendar"
