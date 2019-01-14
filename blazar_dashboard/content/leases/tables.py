@@ -63,7 +63,7 @@ class ViewLeaseCalendar(tables.LinkAction):
 
 class ViewNetworkReservationCalendar(tables.LinkAction):
     name = "network_calendar"
-    verbose_name = _("Network Reservation Calendar")
+    verbose_name = _("Network Calendar")
     url = "horizon:project:leases:network_calendar"
     classes = ("btn-default", )
     icon = "calendar"
