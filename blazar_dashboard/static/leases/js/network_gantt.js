@@ -70,7 +70,7 @@
       });
 
       $('#blazar-gantt-network').empty().height(20 * taskNames.length);
-      gantt = d3.gantt({
+      gantt = d3.gantt.network({
         selector: '#blazar-gantt-network',
         taskTypes: taskNames,
         taskStatus: taskStatus,
@@ -134,7 +134,7 @@
       });
 
       $('#blazar-gantt-network').empty().height(20 * filteredTaskNames.length);
-      gantt = d3.gantt({
+      gantt = d3.gantt.network({
         selector: '#blazar-gantt-network',
         taskTypes: filteredTaskNames,
         taskStatus: taskStatus,
