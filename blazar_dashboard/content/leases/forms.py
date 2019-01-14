@@ -135,6 +135,16 @@ class CreateForm(forms.SelfHandlingForm):
             'data-source-network': _('Network Name')})
     )
 
+    network_description = forms.CharField(
+        label=_('Network Description'),
+        required=False,
+        help_text=_('Description to use when creating the Neutron network.'),
+        widget=forms.TextInput(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-network': _('Network Description')})
+    )
+
     resource_properties = forms.CharField(
         label=_("Resource Properties"),
         required=False,
@@ -198,6 +208,7 @@ class CreateForm(forms.SelfHandlingForm):
                 {
                     'resource_type': 'network',
                     'network_name': data['network_name'],
+                    'network_description': data['network_description'],
                     'network_properties': '',
                     'resource_properties': '',
                 }
