@@ -90,18 +90,20 @@
       var taskNames = $.map(resp.compute_hosts, function(host, i) {
         return host.hypervisor_hostname;
       });
+      /* set initial time range */
+      var timeDomain = computeTimeDomain(7);
 
       $('#blazar-gantt').empty().height(20 * taskNames.length);
       gantt = d3.gantt({
         selector: '#blazar-gantt',
         taskTypes: taskNames,
         taskStatus: taskStatus,
-        tickFormat: format
+        tickFormat: format,
+        timeDomainStart: timeDomain[0],
+        timeDomainEnd: timeDomain[1]
       });
       gantt(tasks);
-
-      /* set initial time range */
-      setTimeDomain(computeTimeDomain(7));
+      setTimeDomain(timeDomain);
     })
     .fail(function() {
       $('#blazar-gantt').html('<div class="alert alert-danger">Unable to load reservations.</div>');
