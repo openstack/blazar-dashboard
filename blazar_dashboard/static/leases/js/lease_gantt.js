@@ -101,11 +101,19 @@
       gantt(tasks);
 
       /* set initial time range */
-      setTimeDomain(gantt.timeDomain());
+      setTimeDomain(computeTimeDomain(7));
     })
     .fail(function() {
       $('#blazar-gantt').html('<div class="alert alert-danger">Unable to load reservations.</div>');
     });
+
+    function computeTimeDomain(days) {
+      var padFraction = 1/8; // gantt chart default is 3 hours for 1 day
+      return [
+        d3.time.day.offset(Date.now(), -days * padFraction),
+        d3.time.day.offset(Date.now(), days * (1 + padFraction))
+      ];
+    }
 
     function setTimeDomain(timeDomain) {
       form.removeClass('time-domain-processed');
@@ -181,15 +189,13 @@
     });
 
     $('.gantt-quickdays').click(function() {
-      var days = $(this).data("gantt-days");
-      var padFraction = 1/8; // gantt chart default is 3 hours for 1 day
-      var timeDomain = [
-        d3.time.day.offset(Date.now(), -days * padFraction),
-        d3.time.day.offset(Date.now(), days * (1 + padFraction))
-      ];
-      setTimeDomain(timeDomain);
-      gantt.timeDomain(timeDomain);
-      redraw();
+      var days = parseInt($(this).data("gantt-days"));
+      if (!isNaN(days)) {
+        var timeDomain = computeTimeDomain(days);
+        setTimeDomain(timeDomain);
+        gantt.timeDomain(timeDomain);
+        redraw();
+      }
     });
   }
 
