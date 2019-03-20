@@ -34,8 +34,8 @@ class CreateForm(forms.SelfHandlingForm):
     # General fields
     name = forms.CharField(
         label=_("Lease Name"),
-        required=True,
-        max_length=80
+        max_length=80,
+        required=True
     )
     start_date = forms.DateTimeField(
         label=_("Start Date"),
@@ -46,7 +46,7 @@ class CreateForm(forms.SelfHandlingForm):
         },
         input_formats=['%Y-%m-%d'],
         widget=forms.DateTimeInput(
-            attrs={'placeholder':'Today', 'class':'datepicker'}),
+            attrs={'placeholder':'Today', 'class':'datepicker','autocomplete':'off'}),
     )
     start_time = forms.DateTimeField(
         label=_('Start Time'),
@@ -55,22 +55,19 @@ class CreateForm(forms.SelfHandlingForm):
             'invalid': _('Value should be time, formatted HH:MM (24-hour clock)'),
         },
         input_formats=['%H:%M'],
-        widget=forms.DateTimeInput(attrs={'placeholder':'Now'}),
+        widget=forms.DateTimeInput(attrs={'placeholder':'Now','autocomplete':'off'}),
         required=False,
     )
     number_of_days = forms.IntegerField(
-        label=_("Reservation Length in Days"),
+        label=_("Lease Length (days)"),
         required=False,
-        help_text=_('Enter whole numbers only, use zero to schedule leases that start and end on the same day'),
+        help_text=_('Set to zero to schedule leases that start and end on the same day'),
+        min_value=0,
         initial=1,
-        error_messages={
-            'invalid': _('Value should be a whole number'),
-        },
-        widget=forms.DateTimeInput(
-            attrs={'placeholder':'Number of Days'}),
+        widget=forms.NumberInput()
     )
     end_date = forms.DateTimeField(
-        label=_("End Date"),
+        label=_("Ends"),
         required=False,
         help_text=_('Date is calculated from the start date and duration.'),
         error_messages={
@@ -90,16 +87,19 @@ class CreateForm(forms.SelfHandlingForm):
         widget=forms.DateTimeInput(attrs={'placeholder':'Same time as now'}),
         required=False,
     )
-    resource_type = forms.ChoiceField(
-        label=_("Resource Type"),
-        required=True,
-        choices=(
-            ('host', _('Physical Host')),
-            ('network', _('Network'))
-        ),
-        widget=forms.ThemableSelectWidget(attrs={
-            'class': 'switchable',
-            'data-slug': 'source'}))
+
+    resource_type_host = forms.BooleanField(
+        label=_("Reserve Physical Host"),
+        initial = True,
+        required = False,
+        widget=forms.CheckboxInput(attrs={
+            'data-slug': 'source'})
+        )
+
+    resource_type_network = forms.BooleanField(
+        label=_("Reserve Network"),
+        required=False,
+    )
 
     # Fields for host reservation
     min_hosts = forms.IntegerField(
@@ -145,6 +145,16 @@ class CreateForm(forms.SelfHandlingForm):
             'data-source-network': _('Network Description')})
     )
 
+    # Fields for host reservation
+    network_ip_count = forms.IntegerField(
+        label=_('Number of IP Addresses Needed'),
+        required=False,
+        help_text=_('If needed, enter the number of ip addresses you would like to reserve.'),
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput()
+    )
+
     resource_properties = forms.CharField(
         label=_("Resource Properties"),
         required=False,
@@ -181,38 +191,34 @@ class CreateForm(forms.SelfHandlingForm):
     )
 
     def handle(self, request, data):
-        if data['resource_type'] == 'host':
-            reservations = [
+        reservations = []
+        if data['resource_type_host'] == True:
+            reservations.append(
                 {
                     'resource_type': 'physical:host',
                     'min': data['min_hosts'],
                     'max': data['max_hosts'],
                     'hypervisor_properties': '',
                     'resource_properties': '',
-                }
-            ]
-        elif data['resource_type'] == 'instance':
-            reservations = [
+                })
+        if data['network_ip_count'] > 0:
+            reservations.append(
                 {
-                    'resource_type': 'virtual:instance',
-                    'amount': data['amount'],
-                    'vcpus': data['vcpus'],
-                    'memory_mb': data['memory_mb'],
-                    'disk_gb': data['disk_gb'],
-                    'affinity': data['affinity'],
-                    'resource_properties': data['resource_properties'] or ''
+                    'resource_type': 'virtual:floatingip',
+                    'network_id': 'Public',
+                    'amount': data['network_ip_count'],
                 }
-            ]
-        elif data['resource_type'] == 'network':
-            reservations = [
+            )
+        if data['resource_type_network'] == True:
+            reservations.append(
                 {
                     'resource_type': 'network',
                     'network_name': data['network_name'],
                     'network_description': data['network_description'],
+                    #'network_ip_count': data['network_ip_count'],
                     'network_properties': '',
                     'resource_properties': '',
-                }
-            ]
+                })
 
         resource_properties = data['resource_properties']
         if resource_properties:
@@ -238,10 +244,16 @@ class CreateForm(forms.SelfHandlingForm):
                                       'lease: %s. Please try again.' % e)
 
     def clean(self):
+
         cleaned_data = super(CreateForm, self).clean()
         localtz = pytz.timezone(self.request.session.get(
             'django_timezone',
             self.request.COOKIES.get('django_timezone', 'UTC')))
+        if not (cleaned_data['resource_type_host'] or cleaned_data['resource_type_network']):
+             raise forms.ValidationError("Please select a resource type.")
+
+        if cleaned_data['resource_type_network'] and not cleaned_data['network_name']:
+            raise forms.ValidationError("Please enter all network details.")
 
         ##### straight copy
         # convert dates and times to datetime UTC
@@ -254,8 +266,7 @@ class CreateForm(forms.SelfHandlingForm):
         if start_time == '' or start_time == None:
             start_time = datetime.datetime.now(localtz) + datetime.timedelta(minutes=1)
 
-        #logger.debug("start date " + start_date.strftime('%Y-%m-%d'))
-        #logger.debug("start time " + start_time.strftime('%H:%M'))
+
         start_datetime = self.prepare_datetimes(start_date, start_time)
 
         end_date = cleaned_data.get("end_date")
@@ -267,8 +278,7 @@ class CreateForm(forms.SelfHandlingForm):
         if end_time == '' or end_time == None:
             end_time = datetime.datetime.now(localtz) + datetime.timedelta(days=1)
 
-        #logger.debug("End date " + end_date.strftime('%Y-%m-%d'))
-        #logger.debug("End time " + end_time.strftime('%H:%M'))
+
         end_datetime = self.prepare_datetimes(end_date, end_time)
         ##### plugging results
         cleaned_data['start_date'] = start_datetime
@@ -290,7 +300,7 @@ class CreateForm(forms.SelfHandlingForm):
         num_hosts = api.client.compute_host_available(self.request,
                                                       cleaned_data['start_date'],
                                                       cleaned_data['end_date'])
-        if (cleaned_data['resource_type'] == 'host' and
+        if (cleaned_data['resource_type_host'] and
             cleaned_data['min_hosts'] > num_hosts):
             raise forms.ValidationError(_(
                 "Not enough hosts are available for this reservation (minimum "
@@ -366,13 +376,13 @@ class UpdateForm(forms.SelfHandlingForm):
 
     def __init__(self, request, *args, **kwargs):
         super(UpdateForm, self).__init__(request, *args, **kwargs)
+        resource_types = []
         for reservation in kwargs['initial']['lease'].reservations:
-            if reservation['resource_type'] != 'physical:host':
-                # Hide the min_hosts/max_hosts when resource_type is not
-                # physical:host
+            resource_types.append(reservation['resource_type'])
+        if not 'physical:host' in resource_types:
                 del self.fields['min_hosts']
                 del self.fields['max_hosts']
-                return
+        return
 
     def handle(self, request, data):
         lease_id = data.get('lease_id')
@@ -422,18 +432,6 @@ class UpdateForm(forms.SelfHandlingForm):
             fields['reservations'][0]['min'] = min_hosts
             fields['reservations'][0]['max'] = min_hosts
 
-        # start_time = data.get('start_time', None)
-        # end_time = data.get('end_time', None)
-        # if start_time:
-        #     if start_time[0] == '+':
-        #         fields['defer_by'] = start_time[1:]
-        #     elif start_time[0] == '-':
-        #         fields['advance_by'] = start_time[1:]
-        # if end_time:
-        #     if end_time[0] == '+':
-        #         fields['prolong_for'] = end_time[1:]
-        #     elif end_time[0] == '-':
-        #         fields['reduce_by'] = end_time[1:]
 
         reservations = data.get('reservations', None)
         if reservations:

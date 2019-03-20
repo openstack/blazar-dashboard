@@ -1,18 +1,19 @@
 {% extends "horizon/common/_modal_form.html" %}
+{% load form_helpers %}
 {% load i18n %}
 
 {% block modal-body-right %}
-    <h3>{% trans "Description" %}:</h3>
-    <p>{% trans "Create a lease with the provided values." %}</p>
+<h3>{% trans "Description" %}:</h3>
+<p>{% trans "Create a lease with the provided values." %}</p>
 {% endblock %}
 
 {% block modal-body %}
 <style>
-.datepicker{z-index:1051!important;}
+  .datepicker{z-index:1051!important;}
 </style>
-<div class="left">
-    <fieldset>
-        <input id="cookie_offset" type="hidden" value="{{offset}}" />
+<div class="row-fluid">
+  <fieldset>
+    <input id="cookie_offset" type="hidden" value="{{offset}}" />
     <div class="alert alert-warning" id="timezone">
       <p>
         {% blocktrans %}
@@ -22,90 +23,108 @@
         <a href="{% url 'horizon:settings:user:index' %}">User Settings</a>.
       </p>
     </div>
-    {% include "horizon/common/_form_fields.html" %}
-    </fieldset>
+
+  </fieldset>
 </div>
-<div class="right">
-    <h3>{% trans "Description" %}:</h3>
-    <p>{% trans "Create a new lease with the provided values." %}</p>
-      <p>
-        Leave date and time values blank to start a lease immediately (on-demand).
-      </p>
-      <p>
-        For specific node reservations, you can find the node UUID using
-        <a href="https://www.chameleoncloud.org/user/discovery">Resource Discovery</a>
-        on the user portal.
-      </p>
-      <p>
-        Please be courteous to other users of the testbed and make sure your lease represents a responsible 
-        use of Chameleon resources and complies with our 
-        <a href="https://chameleoncloud.readthedocs.io/en/latest/getting-started/faq.html#what-are-the-best-practices-for-chameleon-usage" target="blank">
-            best practices</a>. 
-        Chameleon operators reserve the right to terminate leases judged to be abusive.
-      </p>
+<div class="row-fluid">
+  <fieldset>
+    {% include "project/leases/_custom_lease_form.html" %}
+  </fieldset>
 </div>
+
 {% endblock %}
 
 {% block modal-footer %}
-  <a href="{% url 'horizon:project:leases:index' %}" class="btn btn-default cancel">{% trans "Cancel" %}</a>
-  <input class="btn btn-primary pull-right" type="submit" value="{% trans "Create" %}" />
+<a href="{% url 'horizon:project:leases:index' %}" class="btn btn-default cancel">{% trans "Cancel" %}</a>
+<input class="btn btn-primary pull-right" type="submit" value="{% trans " Create" %}" />
 <script type='text/javascript' charset='utf-8'>
-    (function(window, horizon, $, undefined) {
-        'use strict';
+  (function(window, horizon, $, undefined) {
+    'use strict';
 
-        $('#id_start_date').datepicker({
-            format: 'yyyy-mm-dd',
-            todayHighlight: true,
-            autoclose: true
-        });
+    $('#id_name').attr('required', '');
 
-        $('#id_end_date').attr('readonly', 'readonly');
+    $('#id_start_date').datepicker({
+      format: 'yyyy-mm-dd',
+      todayHighlight: true,
+      autoclose: true
+    });
 
-        var offset = new Date().getTimezoneOffset();
-        var cookie_offset = $('#cookie_offset').val();
+    $('#id_end_date').attr('readonly', 'readonly');
 
-        if (cookie_offset != offset) {
-            $('#timezone').show();
-        } else {
-            $('#timezone').hide();
-        }
+    var offset = new Date().getTimezoneOffset();
+    var cookie_offset = $('#cookie_offset').val();
 
-        $('#id_number_of_days, #id_start_date').on('change', function(event){
-            var numberOfDays = $('#id_number_of_days').val();
-            if (numberOfDays != '' || $('#id_start_date').val() != ''){
-                setEndDateTime();
-            }
-        });
+    if (cookie_offset != offset) {
+      $('#timezone').show();
+    } else {
+      $('#timezone').hide();
+    }
 
-        function setEndDateTime(){
-            var startDate = $('#id_start_date').datepicker('getDate');
-            if(startDate == 'Invalid Date'){
-                startDate = new Date();
-            }
+    $('#id_number_of_days, #id_start_date').on('change', function(event) {
+      var numberOfDays = $('#id_number_of_days').val();
+      if (numberOfDays != '' || $('#id_start_date').val() != '') {
+        setEndDateTime();
+      }
+    });
 
-            var leaseLength = parseInt($('#id_number_of_days').val());
-            if(isNaN(leaseLength)){
-                $('#id_number_of_days').val('1');
-                leaseLength = 1;
-            }
-            var result = new Date(startDate);
-            result.setDate(result.getDate() + leaseLength);
+    function setEndDateTime() {
+      var startDate = $('#id_start_date').datepicker('getDate');
+      if (startDate == 'Invalid Date') {
+        startDate = new Date();
+      }
 
-            $('#id_end_date').val(formatDate(result));
-        }
+      var leaseLength = parseInt($('#id_number_of_days').val());
+      if (isNaN(leaseLength)) {
+        $('#id_number_of_days').val('1');
+        leaseLength = 1;
+      }
+      var result = new Date(startDate);
+      result.setDate(result.getDate() + leaseLength);
 
-        function formatDate(date) {
-            var d = new Date(date),
-                month = '' + (d.getMonth() + 1),
-                day = '' + d.getDate(),
-                year = d.getFullYear();
+      $('#id_end_date').val(formatDate(result));
+    }
 
-            if (month.length < 2) month = '0' + month;
-            if (day.length < 2) day = '0' + day;
+    function setHostInput() {
+      if ($('#id_resource_type_host').prop('checked')) {
+        $('#id_min_hosts').attr('disabled', false)
+        $('#id_max_hosts').attr('disabled', false)
+      } else {
+        $('#id_min_hosts').attr('disabled', true)
+        $('#id_max_hosts').attr('disabled', true)
+      }
+    }
 
-            return [year, month, day].join('-');
-        }
+    function setNetworkInput() {
+      if ($('#id_resource_type_network').prop('checked')) {
+        $('#id_network_name').attr('disabled', false).attr('required', '');
+        $('#id_network_description').attr('disabled', false);
+      } else {
+        $('#id_network_name').attr('disabled', true).removeAttr('required');
+        $('#id_network_description').attr('disabled', true);
+      }
+    }
 
-    })(window, horizon, jQuery);
+    try {
+      setHostInput()
+      setNetworkInput();
+      $('#id_resource_type_network').on('change', setNetworkInput);
+      $('#id_resource_type_host').on('change', setHostInput);
+    } catch (err) {
+      console.error(err);
+    }
+
+    function formatDate(date) {
+      var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+
+      return [year, month, day].join('-');
+    }
+
+  })(window, horizon, jQuery);
 </script>
 {% endblock %}
