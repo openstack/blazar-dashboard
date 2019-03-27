@@ -143,6 +143,20 @@ class CreateForm(forms.SelfHandlingForm):
             'data-switch-on': 'source',
             'data-source-instance': _('Root Disk (GB)')})
     )
+    affinity = forms.ChoiceField(
+        label=_("Affinity Rule"),
+        required=False,
+        choices=(
+            (None, _('None')),
+            (True, _('Affinity')),
+            (False, _('Anti-Affinity')),
+        ),
+        initial=None,
+        widget=forms.ThemableSelectWidget(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-instance': _('Affinity Rule')})
+        )
 
     # Fields for both of host and instance reservations
     resource_properties = forms.CharField(
@@ -174,7 +188,7 @@ class CreateForm(forms.SelfHandlingForm):
                     'vcpus': data['vcpus'],
                     'memory_mb': data['memory_mb'],
                     'disk_gb': data['disk_gb'],
-                    'affinity': False,
+                    'affinity': data['affinity'],
                     'resource_properties': data['resource_properties'] or ''
                 }
             ]

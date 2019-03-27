@@ -141,6 +141,7 @@ class LeasesTests(test.TestCase):
             'vcpus': 2,
             'memory_mb': 4096,
             'disk_gb': 128,
+            'affinity': False,
             'resource_properties': '["==", "$energy", "clean"]'
         }
         lease_create.return_value = dummy_lease
@@ -159,7 +160,7 @@ class LeasesTests(test.TestCase):
                     'vcpus': 2,
                     'memory_mb': 4096,
                     'disk_gb': 128,
-                    'affinity': False,
+                    'affinity': 'False',
                     'resource_properties': '["==", "$energy", "clean"]'
                 }
             ],
