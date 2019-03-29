@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add support for specifying the affinity policy to use with instance
+    reservations. This feature is available in Blazar starting with the Stein
+    release.
