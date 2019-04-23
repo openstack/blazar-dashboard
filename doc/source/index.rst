@@ -5,7 +5,7 @@ Blazar Dashboard
 Blazar Dashboard is a Horizon plugin for the Blazar Reservation service.
 
 * Free software: Apache license
-* Source: https://git.openstack.org/cgit/openstack/blazar-dashboard
+* Source: https://opendev.org/openstack/blazar-dashboard
 * Bugs: https://bugs.launchpad.net/blazar
 
 Overview

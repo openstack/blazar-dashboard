@@ -13,8 +13,8 @@ Manual Installation
 
 Begin by cloning the Horizon and Blazar dashboard repositories::
 
-    git clone https://git.openstack.org/openstack/horizon
-    git clone https://git.openstack.org/openstack/blazar-dashboard
+    git clone https://opendev.org/openstack/horizon
+    git clone https://opendev.org/openstack/blazar-dashboard
 
 Create a virtual environment and install Horizon dependencies::
 
