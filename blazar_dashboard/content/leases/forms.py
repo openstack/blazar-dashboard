@@ -180,16 +180,6 @@ class CreateForm(forms.SelfHandlingForm):
             'data-source-instance': _('Affinity Rule')})
     )
 
-    # Fields for both of host and instance reservations
-    resource_properties = forms.CharField(
-        label=_("Resource Properties"),
-        required=False,
-        help_text=_('Enter properties of a resource to reserve.'),
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            'placeholder': 'e.g. ["==", "$extra_key", "extra_value"]'})
-    )
-
     def handle(self, request, data):
         reservations = []
         if data['resource_type_host'] == True:
