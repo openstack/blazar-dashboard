@@ -18,6 +18,7 @@ import json
 import logging
 import re
 
+from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import forms
@@ -25,6 +26,7 @@ from horizon import messages
 import pytz
 
 from blazar_dashboard import api
+from blazar_dashboard import conf
 from . import widgets
 
 LOG = logging.getLogger(__name__)
@@ -37,6 +39,7 @@ class CreateForm(forms.SelfHandlingForm):
         max_length=80,
         required=True
     )
+
     start_date = forms.DateTimeField(
         label=_("Start Date"),
         required=False,
@@ -94,7 +97,7 @@ class CreateForm(forms.SelfHandlingForm):
         required = False,
         widget=forms.CheckboxInput(attrs={
             'data-slug': 'source'})
-        )
+    )
 
     resource_type_network = forms.BooleanField(
         label=_("Reserve Network"),
@@ -124,7 +127,18 @@ class CreateForm(forms.SelfHandlingForm):
             'data-switch-on': 'source',
             'data-source-host': _('Maximum Number of Hosts')})
     )
+    resource_properties = forms.CharField(
+        label=_("Resource Properties"),
+        required=False,
+        help_text=_('Choose properties of the resource(s) to reserve.'),
+        max_length=1024,
+        widget=widgets.CapabilityWidget(attrs={
+            'class': 'switched',
+            'data-switch-on': 'source',
+            'data-source-host': _('Resource Properties')})
+    )
 
+    # Fields for network reservation
     network_name = forms.CharField(
         label=_('Network Name'),
         required=False,
@@ -134,7 +148,6 @@ class CreateForm(forms.SelfHandlingForm):
             'data-switch-on': 'source',
             'data-source-network': _('Network Name')})
     )
-
     network_description = forms.CharField(
         label=_('Network Description'),
         required=False,
@@ -144,12 +157,10 @@ class CreateForm(forms.SelfHandlingForm):
             'data-switch-on': 'source',
             'data-source-network': _('Network Description')})
     )
-
-    # Fields for host reservation
     network_ip_count = forms.IntegerField(
-        label=_('Number of IP Addresses Needed'),
+        label=_('Number of Floating IP Addresses Needed'),
         required=False,
-        help_text=_('If needed, enter the number of ip addresses you would like to reserve.'),
+        help_text=_('If needed, enter the number of Floating IP addresses you would like to reserve.'),
         min_value=0,
         initial=0,
         widget=forms.NumberInput()
@@ -192,10 +203,11 @@ class CreateForm(forms.SelfHandlingForm):
                     'resource_properties': '',
                 })
         if data['network_ip_count'] > 0:
+            network_id = conf.floatingip_reservation.get('network_id')
             reservations.append(
                 {
                     'resource_type': 'virtual:floatingip',
-                    'network_id': 'Public',
+                    'network_id': network_id,
                     'amount': data['network_ip_count'],
                 }
             )

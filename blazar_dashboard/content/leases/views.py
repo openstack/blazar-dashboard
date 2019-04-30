@@ -26,6 +26,7 @@ from horizon.utils import memoized
 import pytz
 
 from blazar_dashboard import api
+from blazar_dashboard import conf
 from blazar_dashboard.content.leases import forms as project_forms
 from blazar_dashboard.content.leases import tables as project_tables
 from blazar_dashboard.content.leases import tabs as project_tabs
@@ -102,6 +103,8 @@ class CreateView(forms.ModalFormView):
         tz = pytz.timezone(self.request.session.get('django_timezone', self.request.COOKIES.get('django_timezone', 'UTC')))
         context['timezone'] = tz
         context['offset'] = int((pytz.datetime.datetime.now(tz).utcoffset().total_seconds() / 60) * -1)
+        context['enable_floatingip_reservations'] = (
+            conf.floatingip_reservation.get('network_id') is not None)
         return context
 
     # def get_success_url(self):

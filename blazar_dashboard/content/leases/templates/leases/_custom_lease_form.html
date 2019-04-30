@@ -1,15 +1,15 @@
 {% load form_helpers %}
 <div class="alert alert-warning">
-        Please be courteous to other users of the testbed and make sure your lease represents a responsible 
-        use of Chameleon resources and complies with our 
+        Please be courteous to other users of the testbed and make sure your lease represents a responsible
+        use of Chameleon resources and complies with our
         <a href="https://chameleoncloud.readthedocs.io/en/latest/getting-started/faq.html#what-are-the-best-practices-for-chameleon-usage" target="blank">
-            best practices</a>. 
+            best practices</a>.
         Chameleon operators reserve the right to terminate leases judged to be abusive.
 </div>
 {% include 'horizon/common/_form_errors.html' with form=form %}
         <div class="row-fluid">
         {% include 'horizon/common/_form_field.html' with field=form.name %}
-        
+
     <p style="display:none;">
             Leave date and time values blank to start a lease immediately (on-demand).
     </p>
@@ -24,7 +24,7 @@
                 <label class="control-label {{ classes.label }} {% if form.number_of_days.field.required %}{{ form.required_css_class }}{% endif %}" for="{{ form.number_of_days.auto_id }}">
                     <span class="field-label">{{ form.number_of_days.label }}</span></label>
                 {% include "horizon/common/_form_field_decorator.html" with field=form.number_of_days  %}
-          
+
               <div class="{{ classes.value }} {{ form.number_of_days|wrapper_classes }}">
                   {{ form.number_of_days|add_bootstrap_class }}
               </div>
@@ -36,7 +36,7 @@
                 <label class="control-label {{ classes.label }} {% if form.end_date.field.required %}{{ form.required_css_class }}{% endif %}" for="{{ form.end_date.auto_id }}">
                     <span class="field-label">{{ form.end_date.label }}</span></label>
                 {% include "horizon/common/_form_field_decorator.html" with field=form.end_date  %}
-          
+
               <div class="{{ classes.value }} {{ form.end_date|wrapper_classes }}">
                   {{ form.end_date|add_bootstrap_class }}
               </div>
@@ -47,8 +47,6 @@
         </div>
         {% include 'horizon/common/_form_field.html' with field=form.end_time %}
 </div>
-
-{% comment "Not ready for floating ip reservations on this form yet" %} include 'horizon/common/_form_field.html' with field=form.network_ip_count {% endcomment %}
 
 <div class="left" style="margin-top:10px; border-right:1px solid lightgray;height:auto">
         <h4>Physical Hosts</h4>
@@ -68,5 +66,9 @@
         {% include 'horizon/common/_form_field.html' with field=form.resource_type_network %}
         {% include 'horizon/common/_form_field.html' with field=form.network_name %}
         {% include 'horizon/common/_form_field.html' with field=form.network_description %}
+
+        {% if enable_floatingip_reservations %}
+        {% include 'horizon/common/_form_field.html' with field=form.network_ip_count %}
+        {% endif %}
 </div>
 </div>
