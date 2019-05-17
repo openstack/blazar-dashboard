@@ -12,8 +12,11 @@
 
 from __future__ import absolute_import
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from datetime import datetime
+from itertools import chain
 import logging
+from pytz import UTC
 from six.moves.urllib.parse import urlparse
 
 from django.db import connections
@@ -60,7 +63,7 @@ class Host(base.APIDictWrapper):
     _attrs = ['id', 'hypervisor_hostname', 'hypervisor_type',
               'hypervisor_version', 'vcpus', 'cpu_info', 'memory_mb',
               'local_gb', 'status', 'created_at', 'updated_at',
-              'service_name', 'trust_id', 'reservable']
+              'service_name', 'trust_id', 'reservable', 'node_type']
 
     def __init__(self, apiresource):
         super(Host, self).__init__(apiresource)
@@ -77,6 +80,14 @@ class Host(base.APIDictWrapper):
             if k not in self._attrs:
                 excaps[k] = v
         return excaps
+
+
+class Allocation(base.APIDictWrapper):
+
+    _attrs = ['resource_id', 'reservations']
+
+    def __init__(self, apiresource):
+        super(Allocation, self).__init__(apiresource)
 
 
 @memoized
@@ -153,6 +164,18 @@ def host_delete(request, host_id):
     blazarclient(request).host.delete(host_id)
 
 
+def host_get_allocation(request, host_id):
+    """Get a host's allocations."""
+    allocation = blazarclient(request).host.get_allocation(host_id)
+    return Allocation(allocation)
+
+
+def host_allocations_list(request):
+    """List allocations for all hosts."""
+    allocations = blazarclient(request).host.list_allocations()
+    return [Allocation(a) for a in allocations]
+
+
 def dictfetchall(cursor):
     "Returns all rows from a cursor as a dict"
     desc = cursor.description
@@ -179,133 +202,81 @@ def compute_host_available(request, start_date, end_date):
     Return the number of compute hosts available for reservation for the entire
     specified date range.
     """
-    start_date_str = start_date.strftime('%Y-%m-%d %H:%M')
-    end_date_str = end_date.strftime('%Y-%m-%d %H:%M')
-    cursor = get_cursor_for_request(request)
-    cursor.execute("""
-        select count(*) as available
-        from computehosts ch
-        where ch.id not in (
-            select ch.id
-            from computehosts ch
-            join computehost_allocations cha on cha.`compute_host_id` = ch.`id`
-            join reservations r on r.id = cha.`reservation_id`
-            join leases l on l.`id` = r.`lease_id`
-            where
-                r.deleted IS NULL and
-                ((l.`start_date` > %s and l.`start_date` < %s)
-                or (l.`end_date` > %s and l.`end_date` < %s)
-                or (l.`start_date` < %s and l.`end_date` > %s))
-        )
-        """, [start_date_str, end_date_str, start_date_str, end_date_str, start_date_str, end_date_str])
-    count = cursor.fetchone()[0]
-    return count
+    def check_host_unavailable(reservation):
+        lease_start = datetime.strptime(
+            reservation['start_date'],
+            '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=UTC)
+        lease_end = datetime.strptime(
+            reservation['end_date'],
+            '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=UTC)
+
+        if (lease_start > start_date and lease_start < end_date):
+            return True
+        elif (lease_end > start_date and lease_end < end_date):
+            return True
+        elif (lease_start < start_date and lease_end > end_date):
+            return True
+        else:
+            return False
+
+    available_hosts = [
+        h for h in host_allocations_list(request)
+        if (not any([check_host_unavailable(r) for r in h.reservations]) or
+            not h.reservations)]
+
+    return len(available_hosts)
 
 
-def node_in_lease(request, lease_id, active_only=True):
-    sql = '''\
-    SELECT
-        c.hypervisor_hostname,
-        ca.deleted
-    FROM
-        computehost_allocations AS ca
-        JOIN computehosts AS c ON c.id = ca.compute_host_id
-        JOIN reservations AS r ON r.id = ca.reservation_id
-        JOIN leases AS l ON l.id = r.lease_id
-    WHERE
-        l.id = %s
-    '''
-    if active_only:
-        sql += " AND ca.deleted IS NULL"
-    sql_args = (lease_id,)
+def node_in_lease(request, lease_id):
+    """Return list of hypervisor_hostnames in a lease."""
+    hypervisor_by_host_id = {
+        h.id: h.hypervisor_hostname for h in host_list(request)}
 
-    cursor = get_cursor_for_request(request)
-    cursor.execute(sql, sql_args)
-    hypervisor_hostnames = dictfetchall(cursor)
-    return hypervisor_hostnames
+    return [
+        hypervisor_by_host_id[h.resource_id] for h in host_allocations_list
+        if any((r['lease_id'] == lease_id) for r in h.reservations)]
 
 
-def compute_host_list(request, node_types=False):
-    """Return a list of compute hosts available for reservation"""
-    sql = '''\
-    SELECT
-        hypervisor_hostname,
-        vcpus,
-        memory_mb,
-        local_gb,
-        cpu_info,
-        hypervisor_type
-    FROM
-        computehosts
-    '''
-    cursor = get_cursor_for_request(request)
-    cursor.execute(sql)
-    compute_hosts = dictfetchall(cursor)
+def compute_host_list(request):
+    """Return a list of compute hosts available for reservation."""
+    def compute_host2dict(h):
+        host_dict = dict(
+            hypervisor_hostname=h.hypervisor_hostname, vcpus=h.vcpus,
+            memory_mb=h.memory_mb, local_gb=h.local_gb, cpu_info=h.cpu_info,
+            hypervisor_type=h.hypervisor_type, node_type=h.node_type)
 
-    if node_types:
-        node_types = node_type_map(cursor=cursor)
-        for ch in compute_hosts:
-            ch['node_type'] = node_types.get(ch['hypervisor_hostname'], 'unknown')
+        return host_dict
 
-    return compute_hosts
-
-
-def node_type_map(request=None, cursor=None):
-    if cursor is None:
-        cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT ch.hypervisor_hostname AS id, nt.node_type
-    FROM blazar.computehosts AS ch
-    INNER JOIN (
-        SELECT ex.computehost_id AS id, ex.capability_value AS node_type
-        FROM blazar.computehost_extra_capabilities AS ex
-        INNER JOIN (
-            SELECT id, MAX(created_at)
-            FROM blazar.computehost_extra_capabilities
-            WHERE capability_name = 'node_type'
-            GROUP BY computehost_id
-        ) AS exl
-        ON ex.id = exl.id
-    ) AS nt
-    ON ch.id = nt.id;
-    '''
-    cursor.execute(sql)
-    node_types = dict(cursor.fetchall())
-    return node_types
+    return [compute_host2dict(h) for h in host_list(request)]
 
 
 def reservation_calendar(request):
     """Return a list of all scheduled leases."""
-    cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT
-        l.name,
-        l.project_id,
-        l.start_date,
-        l.end_date,
-        r.id,
-        r.status,
-        c.hypervisor_hostname
-    FROM
-        computehost_allocations cha
-        JOIN computehosts c ON c.id = cha.compute_host_id
-        JOIN reservations r ON r.id = cha.reservation_id
-        JOIN leases l ON l.id = r.lease_id
-    WHERE
-        r.deleted IS NULL
-        AND cha.deleted IS NULL
-    ORDER BY
-        start_date,
-        project_id;
-    '''
-    cursor.execute(sql)
-    host_reservations = dictfetchall(cursor)
 
-    return host_reservations
+    hypervisor_by_host_id = {
+        h.id: h.hypervisor_hostname for h in host_list(request)}
+
+    def host_reservation_dict(reservation, resource_id):
+        return dict(
+            name=reservation.get('name', None),
+            project_id=reservation.get('project_id', None),
+            start_date=reservation.get('start_date', None),
+            end_date=reservation.get('end_date', None),
+            id=reservation.get('id', None),
+            status=reservation.get('status', None),
+            hypervisor_hostname=hypervisor_by_host_id[resource_id])
+
+    host_reservations = [
+        [host_reservation_dict(r, alloc.resource_id)
+            for r in alloc.reservations]
+        for alloc in host_allocations_list(request)]
+
+    return list(chain(*host_reservations))
 
 
 def network_list(request):
     """Return a list of networks available for reservation"""
+    # TODO > USE CLIENT
     sql = '''\
     SELECT
         physical_network,

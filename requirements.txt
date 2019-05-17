@@ -8,5 +8,5 @@
 #
 # PBR should always appear first
 pbr!=2.1.0,>=2.0.0 # Apache-2.0
-python-blazarclient>=1.0.1 # Apache-2.0
+-e git+https://github.com/ChameleonCloud/python-blazarclient.git@chameleoncloud/stable/stein#egg=python_blazarclient-2.1.0
 horizon>=14.0.0.0b3  # Apache-2.0

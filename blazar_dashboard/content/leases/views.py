@@ -52,7 +52,7 @@ class CalendarView(views.APIView):
 
 def calendar_data_view(request):
     data = {}
-    data['compute_hosts'] = api.client.compute_host_list(request, node_types=True)
+    data['compute_hosts'] = api.client.compute_host_list(request)
     data['reservations'] = api.client.reservation_calendar(request)
 
     return JsonResponse(data)
@@ -79,7 +79,8 @@ def extra_capability_names(request):
 
 def extra_capability_values(request, name):
     data = {
-        'extra_capability_values': api.client.extra_capability_values(request, name),
+        'extra_capability_values': api.client.extra_capability_values(
+            request, name),
     }
     return JsonResponse(data)
 
