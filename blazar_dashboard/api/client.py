@@ -233,7 +233,10 @@ def node_in_lease(request, lease_id):
         h.id: h.hypervisor_hostname for h in host_list(request)}
 
     return [
-        hypervisor_by_host_id[h.resource_id] for h in host_allocations_list
+        dict(
+            hypervisor_hostname=hypervisor_by_host_id[h.resource_id],
+            deleted=False)
+        for h in host_allocations_list(request)
         if any((r['lease_id'] == lease_id) for r in h.reservations)]
 
 
@@ -257,7 +260,7 @@ def reservation_calendar(request):
         h.id: h.hypervisor_hostname for h in host_list(request)}
 
     def host_reservation_dict(reservation, resource_id):
-        return dict(
+        host_reservation = dict(
             name=reservation.get('name', None),
             project_id=reservation.get('project_id', None),
             start_date=reservation.get('start_date', None),
@@ -265,6 +268,8 @@ def reservation_calendar(request):
             id=reservation.get('id', None),
             status=reservation.get('status', None),
             hypervisor_hostname=hypervisor_by_host_id[resource_id])
+
+        return {k: v for k, v in host_reservation.items() if v is not None}
 
     host_reservations = [
         [host_reservation_dict(r, alloc.resource_id)

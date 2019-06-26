@@ -59,10 +59,17 @@ d3.gantt = function(options) {
 
   function tooltipContent(d) {
     var fmt = d3.time.format('%d-%b %H:%M');
-    return '<div class="tooltip-content"><dl><dt>Project</dt><dd>'
-      + d.data.project_id
-      + '</dd><dt>Name</dt><dd>'
-      + d.data.name
+    var toolTipStr = '<div class="tooltip-content">'
+
+    if ('project_id' in d.data) {
+        toolTipStr += '<dl><dt>Project</dt><dd>' + d.data.project_id
+    }
+
+    if ('name' in d.data) {
+        toolTipStr += '</dd><dt>Name</dt><dd>' + d.data.name
+    }
+
+    return toolTipStr
       + '</dd><dt>Hosts</dt><dd>'
       + d.data.hosts.join('<br>')
       + '</dd><dt>Reserved</dt><dd>'
