@@ -179,3 +179,34 @@ html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Blazardashboarddoc'
+
+# -- Options for LaTeX output ------------------------------------------------
+
+latex_elements = {
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
+
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
+
+    # Additional stuff for the LaTeX preamble.
+    # openany: Skip blank pages in generated PDFs
+    'extraclassoptions': 'openany,oneside',
+    'makeindex': '',
+    'printindex': '',
+    'preamble': r'\setcounter{tocdepth}{3}',
+}
+
+# Disable usage of xindy https://bugzilla.redhat.com/show_bug.cgi?id=1643664
+# Some distros are missing xindy
+latex_use_xindy = False
+
+# Grouping the document tree into LaTeX files. List of tuples
+# (source start file, target name, title, author, documentclass
+# [howto/manual]).
+
+latex_documents = [
+    ('index', 'doc-blazar-dashboard.tex',
+     u'Blazar Dashboard Documentation',
+     u'OpenStack', 'howto', True),
+]
