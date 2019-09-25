@@ -6,6 +6,7 @@ blazar_dashboard Release Notes
    :maxdepth: 1
 
    unreleased
+   train
    stein
    rocky
    queens
