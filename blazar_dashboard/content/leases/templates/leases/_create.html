@@ -85,23 +85,13 @@
     }
 
     function setHostInput() {
-      if ($('#id_resource_type_host').prop('checked')) {
-        $('#id_min_hosts').attr('disabled', false)
-        $('#id_max_hosts').attr('disabled', false)
-      } else {
-        $('#id_min_hosts').attr('disabled', true)
-        $('#id_max_hosts').attr('disabled', true)
-      }
+      var hostInputState = !$('#id_resource_type_host').prop('checked');
+      $('#host-options').find(':input').each(function(){$(this).attr('disabled', hostInputState)});
     }
 
     function setNetworkInput() {
-      if ($('#id_resource_type_network').prop('checked')) {
-        $('#id_network_name').attr('disabled', false).attr('required', '');
-        $('#id_network_description').attr('disabled', false);
-      } else {
-        $('#id_network_name').attr('disabled', true).removeAttr('required');
-        $('#id_network_description').attr('disabled', true);
-      }
+      var networkInputState = !$('#id_resource_type_network').prop('checked');
+      $('#network-options').find(':input').each(function(){$(this).attr('disabled', networkInputState)});
     }
 
     try {
@@ -109,6 +99,8 @@
       setNetworkInput();
       $('#id_resource_type_network').on('change', setNetworkInput);
       $('#id_resource_type_host').on('change', setHostInput);
+      $('#criteria-list').on('DOMSubtreeModified', setHostInput);
+
     } catch (err) {
       console.error(err);
     }

@@ -56,16 +56,20 @@
                 <a href="https://www.chameleoncloud.org/user/discovery">Resource Discovery</a>
                 on the user portal.
               </p>
+              <div id="host-options">
               {% include 'horizon/common/_form_field.html' with field=form.min_hosts %}
               {% include 'horizon/common/_form_field.html' with field=form.max_hosts %}
               {% include 'horizon/common/_form_field.html' with field=form.resource_properties %}
+            </div>
 </div>
 <div class="right" style="padding-top:10px">
         <h4>Network</h4>
 
         {% include 'horizon/common/_form_field.html' with field=form.resource_type_network %}
+        <div id="network-options">
         {% include 'horizon/common/_form_field.html' with field=form.network_name %}
         {% include 'horizon/common/_form_field.html' with field=form.network_description %}
+        </div>
 
         {% if enable_floatingip_reservations %}
         {% include 'horizon/common/_form_field.html' with field=form.network_ip_count %}

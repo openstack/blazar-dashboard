@@ -55,6 +55,8 @@ class CapabilityWidget(Widget):
 
             formatted_criteria.append([equality, name, value])
 
+        formatted_criteria.sort(key=lambda x: x[2], reverse=True)
+
         if len(formatted_criteria) < 1:
             resource_properties = ''
         elif len(formatted_criteria) == 1:

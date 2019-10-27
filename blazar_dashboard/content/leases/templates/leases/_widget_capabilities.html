@@ -1,5 +1,5 @@
-<div id="criteria">
-    <!-- <input id="criteria-payload" name="criteria-{{ widget.name }}" type="hidden"> -->
+<div id="criteria" style="margin-bottom:50px">
+    <input id="criteria-payload" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
     <div id="no-criteria-warning" class="alert alert-danger" hidden="hidden">
         <strong>No filters are specified,</strong> random hardware will be
         assigned. Recommend that you
@@ -7,13 +7,12 @@
         or <a href="#" class="cri-adder" data-cri-name="uid">a specific node ID</a>.
     </div>
     <div>
-        <ul id="criteria-list" class="form-inline">
+        <ul id="criteria-list" class="form-inline" style="padding-inline-start:0px;">
         </ul>
     </div>
-    <button id="criteria-add" type="button" class="btn btn-sm btn-success">Add Filter</button>
-    <!-- <div id="criteria-matchinfo" class="btn btn-link" hidden>Filters match * hosts.</button> -->
+    <button id="criteria-add" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success">Add Filter</button>
 </div>
-<hr>
+
 <script>
 function capabilitiesjs() {
     'use strict';
@@ -30,9 +29,21 @@ function capabilitiesjs() {
         if (this.readyState == 4 && this.status == 200) {
             capabilityNames = JSON.parse(this.responseText)['extra_capability_names'];
             capabilityNames.sort();
-            // console.log(capabilityNames)
+            var props = document.getElementById('criteria-payload').getAttribute('form_data');
+            if(props && props != 'None' && props.length > 0){
+                props = JSON.parse(props);
+                if (props[0] == 'and'){
+                    props.shift();
+                    for(var i = 0 ; i < props.length; i++){
+                        addCriterionItem(props[i][1].replace(/\$/g,''), props[i][2]);
+                        }
+                return;
+                }
 
-            // default to node type selection
+                var prop = props[1].replace(/\$/g,'')
+                addCriterionItem(prop,props[2]);
+                return;
+            }
             addCriterionItem('node_type');
         }
     };
@@ -41,6 +52,23 @@ function capabilitiesjs() {
 
     var crl = document.querySelector('#criteria-list');
     crl.innerHTML = '';
+
+    function setResourceProperyValues(index){
+        var props = document.getElementById('criteria-payload').getAttribute('form_data');
+        if(!props || props == 'None' || props.length == 0){
+            setPropertyType(index, 'compute_haswell');
+            return;
+        }
+        props = JSON.parse(props);
+        if (props[0] == 'and'){
+            props.shift();
+            setPropertyType(index, props[index][2]);
+            setConditionalType(index, props[index][0]);
+            return;
+        }
+        setPropertyType(index, props[2]);
+        setConditionalType(index, props[0]);
+    }
 
     function displayWarningIfEmpty() {
         var criteria = document.querySelectorAll('.criterion');
@@ -51,11 +79,11 @@ function capabilitiesjs() {
         addCriterionItem();
     }
 
-    function addCriterionItem(prefilled_name) {
+    function addCriterionItem(prefilled_name, prefilled_value) {
         var criterion = document.createElement('li');
+        criterion.style = "list-style-type:none;"
         criterion.className = 'criterion';
         criterion.innerHTML =
-            // '<div class="form-inline">' +
             '<select class="form-control cri-name">' +
                 '<option disabled selected></option>' + // blank...select something else.
             '</select> ' +
@@ -70,13 +98,13 @@ function capabilitiesjs() {
             '<select id="resource-node-type" class="form-control cri-val">' +
                 '<option disabled selected></option>' +
             '</select> ' +
-            '<button class="btn btn-xs btn-danger cri-rm">X</button>' ;//+
-            // '</div>';
+            '<button class="btn btn-xs btn-danger cri-rm">X</button>';
 
         var index = criteriaCounter;
         criteriaCounter = criteriaCounter + 1;
 
         var name_selector = criterion.querySelector('.cri-name');
+        name_selector.id = 'criteria-{{ widget.name }}-id-' + index;
         name_selector.name = 'criteria-{{ widget.name }}-name-' + index;
         capabilityNames.forEach(function(cn) {
             name_selector.appendChild(new Option(cn, cn));
@@ -85,8 +113,10 @@ function capabilitiesjs() {
 
         var equality_selector = criterion.querySelector('.cri-equality');
         equality_selector.name = 'criteria-{{ widget.name }}-equality-' + index;
+        equality_selector.id = 'criteria-{{ widget.name }}-equality-' + index;
 
         var value_selector = criterion.querySelector('.cri-val');
+        value_selector.id = 'criteria-resource_properties-value-' + index;
         value_selector.name = 'criteria-{{ widget.name }}-value-' + index;
         value_selector.addEventListener('change', displayMatchingHostCount, false);
 
@@ -102,6 +132,9 @@ function capabilitiesjs() {
 
         document.querySelector('#no-criteria-warning').hidden = true;
         crl.appendChild(criterion);
+        var hr = document.createElement('hr');
+        hr.style = "margin-top:5px;margin-bottom:5px;"
+        crl.appendChild(hr);
     }
 
     function changeCriterionName(event) {
@@ -146,15 +179,32 @@ function capabilitiesjs() {
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
         });
-        setDefaultNodeType();
+        setResourceProperyValues(element.id.slice(-1));
     }
 
     function setDefaultNodeType(){
         var nodeOptions = $("#resource-node-type");
-        console.log("getting node options in widget capabilitiesjs")
         try {
           nodeOptions.find('[value="compute_haswell"]').attr("selected","selected");
-          console.log("node options in widget capabilitiesjs found: " + nodeOptions);
+        } catch(err) {
+          console.error(err);
+        }
+    }
+
+    function setPropertyType(index, propType){
+        var nodeOptions = $('#criteria-resource_properties-value-' + index);
+        try {
+          nodeOptions.find('[value="' + propType + '"]').attr("selected","selected");
+        } catch(err) {
+          console.error(err);
+        }
+    }
+
+    function setConditionalType(index, nodeCondition){
+        var nodeConditions = $('#criteria-resource_properties-equality-' + index);
+        var conditions = {"==":"eq","<":"lt","<=":"le",">":"gt",">=":"ge","!=":"ne"}
+        try {
+          nodeConditions.find('[value="' + conditions[nodeCondition] + '"]').attr("selected","selected");
         } catch(err) {
           console.error(err);
         }
@@ -163,7 +213,6 @@ function capabilitiesjs() {
     function removeCriterion(event) {
         var criterion = event.target.parentNode;
         criterion.parentNode.removeChild(criterion);
-
         displayWarningIfEmpty();
         displayMatchingHostCount();
     }
@@ -212,15 +261,6 @@ function capabilitiesjs() {
     });
 }
 
-// this is horrible, but if not compressed then horizon likes to double
-// (or triple) run code.
-// var pragma_once_capabilitiesjs;
-// if (pragma_once_capabilitiesjs === undefined) {
-//     capabilitiesjs();
-//     pragma_once_capabilitiesjs = true;
-// }
-// above doesn't work because it dirties the document; the modal form pop-up
-// thinks it already did the code.
 var cri_div = document.querySelector('#criteria');
 if (cri_div.dataset.loaded_once === undefined) {
     capabilitiesjs();
