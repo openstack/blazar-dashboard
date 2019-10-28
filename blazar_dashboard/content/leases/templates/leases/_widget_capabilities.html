@@ -53,7 +53,7 @@ function capabilitiesjs() {
     var crl = document.querySelector('#criteria-list');
     crl.innerHTML = '';
 
-    function setResourceProperyValues(index){
+    function setResourcePropertyValues(index){
         var props = document.getElementById('criteria-payload').getAttribute('form_data');
         if(!props || props == 'None' || props.length == 0){
             setPropertyType(index, 'compute_haswell');
@@ -179,7 +179,7 @@ function capabilitiesjs() {
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
         });
-        setResourceProperyValues(element.id.slice(-1));
+        setResourcePropertyValues(element.id.slice(-1));
     }
 
     function setDefaultNodeType(){

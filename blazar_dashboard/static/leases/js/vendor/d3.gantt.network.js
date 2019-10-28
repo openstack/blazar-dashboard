@@ -58,7 +58,7 @@ d3.gantt.network = function(options) {
   };
 
   function tooltipContent(d) {
-    var fmt = d3.time.format('%d-%b %H:%M');
+    var fmt = d3.time.format('%-m/%d/%Y at %-I:%M %p');
     return '<div class="tooltip-content"><dl><dt>Project</dt><dd>'
       + d.data.project_id
       + '</dd><dt>Name</dt><dd>'
@@ -66,7 +66,7 @@ d3.gantt.network = function(options) {
       + '</dd><dt>Networks</dt><dd>'
       + d.data.networks.join('<br>')
       + '</dd><dt>Reserved</dt><dd>'
-      + fmt(d.startDate) + ' - ' + fmt(d.endDate)
+      + fmt(d.startDate) + ' <strong>to</strong><br/>' + fmt(d.endDate)
       + '</dd></dl></div>';
   }
 

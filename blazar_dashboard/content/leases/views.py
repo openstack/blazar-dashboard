@@ -53,7 +53,7 @@ class CalendarView(views.APIView):
 def calendar_data_view(request):
     data = {}
     data['compute_hosts'] = api.client.compute_host_list(request)
-    data['reservations'] = api.client.reservation_calendar(request)
+    data['reservations'] = setUTC(api.client.reservation_calendar(request))
 
     return JsonResponse(data)
 
@@ -65,10 +65,16 @@ class NetworkCalendarView(views.APIView):
 def network_calendar_data_view(request):
     data = {}
     data['networks'] = api.client.network_list(request)
-    data['reservations'] = api.client.network_reservation_calendar(request)
-
+    data['reservations'] = setUTC(api.client.network_reservation_calendar(request))
     return JsonResponse(data)
 
+def setUTC(reservations):
+    if not reservations:
+        return []
+    for i in reservations:
+        i['start_date'] = pytz.utc.localize(i.get('start_date'))
+        i['end_date'] = pytz.utc.localize(i.get('end_date'))
+    return reservations
 
 def extra_capability_names(request):
     data = {
