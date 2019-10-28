@@ -69,11 +69,9 @@ def network_calendar_data_view(request):
     return JsonResponse(data)
 
 def setUTC(reservations):
-    if not reservations:
-        return []
-    for i in reservations:
-        i['start_date'] = pytz.utc.localize(i.get('start_date'))
-        i['end_date'] = pytz.utc.localize(i.get('end_date'))
+    for r in reservations:
+        r['start_date'] = pytz.utc.localize(r.get('start_date'))
+        r['end_date'] = pytz.utc.localize(r.get('end_date'))
     return reservations
 
 def extra_capability_names(request):

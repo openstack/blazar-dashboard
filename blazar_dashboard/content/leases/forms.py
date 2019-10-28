@@ -195,14 +195,14 @@ class CreateForm(forms.SelfHandlingForm):
         reservations = []
         if data['resource_type_host'] == True:
             # these resource properties only apply to host reservations
-            res_props = data['resource_properties']
+            res_props = data.get('resource_properties', '')
             reservations.append(
                 {
                     'resource_type': 'physical:host',
                     'min': data['min_hosts'],
                     'max': data['max_hosts'],
                     'hypervisor_properties': '',
-                    'resource_properties': res_props if res_props else '',
+                    'resource_properties': res_props,
                 })
         if data['network_ip_count'] > 0:
             network_id = conf.floatingip_reservation.get('network_id')

@@ -30,18 +30,18 @@ function capabilitiesjs() {
             capabilityNames = JSON.parse(this.responseText)['extra_capability_names'];
             capabilityNames.sort();
             var props = document.getElementById('criteria-payload').getAttribute('form_data');
-            if(props && props != 'None' && props.length > 0){
+            if(props && props != 'None'){
                 props = JSON.parse(props);
                 if (props[0] == 'and'){
                     props.shift();
                     for(var i = 0 ; i < props.length; i++){
-                        addCriterionItem(props[i][1].replace(/\$/g,''), props[i][2]);
+                        addCriterionItem(props[i][1].replace(/\$/g,''));
                         }
                 return;
                 }
 
                 var prop = props[1].replace(/\$/g,'')
-                addCriterionItem(prop,props[2]);
+                addCriterionItem(prop);
                 return;
             }
             addCriterionItem('node_type');
@@ -79,7 +79,7 @@ function capabilitiesjs() {
         addCriterionItem();
     }
 
-    function addCriterionItem(prefilled_name, prefilled_value) {
+    function addCriterionItem(prefilled_name) {
         var criterion = document.createElement('li');
         criterion.style = "list-style-type:none;"
         criterion.className = 'criterion';
@@ -193,11 +193,7 @@ function capabilitiesjs() {
 
     function setPropertyType(index, propType){
         var nodeOptions = $('#criteria-resource_properties-value-' + index);
-        try {
           nodeOptions.find('[value="' + propType + '"]').attr("selected","selected");
-        } catch(err) {
-          console.error(err);
-        }
     }
 
     function setConditionalType(index, nodeCondition){
