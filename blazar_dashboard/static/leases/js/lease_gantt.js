@@ -35,6 +35,7 @@
         ['gpu_m40', 'GPU (M40)'],
         ['gpu_p100', 'GPU (P100)'],
         ['gpu_p100_nvlink', 'GPU (P100 + NVLink)'],
+        ['compute_cascadelake', 'Cascade Lake Compute Node'],
         ['compute_skylake', 'Skylake Compute Node'],
         ['compute_haswell', 'Haswell Compute Node'],
         ['compute_haswell_ib', 'Haswell with Infiniband Support'],
