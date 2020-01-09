@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from datetime import datetime
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.http import JsonResponse
@@ -23,7 +24,7 @@ from horizon import tables
 from horizon import tabs
 from horizon import views
 from horizon.utils import memoized
-import pytz
+from pytz import timezone
 
 from blazar_dashboard import api
 from blazar_dashboard import conf
@@ -53,8 +54,7 @@ class CalendarView(views.APIView):
 def calendar_data_view(request):
     data = {}
     data['compute_hosts'] = api.client.compute_host_list(request)
-    data['reservations'] = setUTC(api.client.reservation_calendar(request))
-
+    data['reservations'] = [with_utc_dates(r) for r in api.client.reservation_calendar(request)]
     return JsonResponse(data)
 
 
@@ -65,14 +65,18 @@ class NetworkCalendarView(views.APIView):
 def network_calendar_data_view(request):
     data = {}
     data['networks'] = api.client.network_list(request)
-    data['reservations'] = setUTC(api.client.network_reservation_calendar(request))
+    data['reservations'] = [with_utc_dates(r) for r in api.client.network_reservation_calendar(request)]
     return JsonResponse(data)
 
-def setUTC(reservations):
-    for r in reservations:
-        r['start_date'] = pytz.utc.localize(r.get('start_date'))
-        r['end_date'] = pytz.utc.localize(r.get('end_date'))
-    return reservations
+def with_utc_dates(reservation):
+    def add_utc_tz(blazar_api_datestr):
+        dateobj = datetime.strptime(blazar_api_datestr, "%Y-%m-%dT%H:%M:%S.%f")
+        return dateobj.replace(tzinfo=timezone('UTC'))
+
+    for date_key in ['start_date', 'end_date']:
+        reservation[date_key] = add_utc_tz(reservation.get(date_key))
+        
+    return reservation
 
 def extra_capability_names(request):
     data = {
@@ -105,9 +109,9 @@ class CreateView(forms.ModalFormView):
 
     def get_context_data(self, **kwargs):
         context = super(CreateView, self).get_context_data(**kwargs)
-        tz = pytz.timezone(self.request.session.get('django_timezone', self.request.COOKIES.get('django_timezone', 'UTC')))
+        tz = timezone(self.request.session.get('django_timezone', self.request.COOKIES.get('django_timezone', 'UTC')))
         context['timezone'] = tz
-        context['offset'] = int((pytz.datetime.datetime.now(tz).utcoffset().total_seconds() / 60) * -1)
+        context['offset'] = int((datetime.now(tz).utcoffset().total_seconds() / 60) * -1)
         context['enable_floatingip_reservations'] = (
             conf.floatingip_reservation.get('network_id') is not None)
         return context
