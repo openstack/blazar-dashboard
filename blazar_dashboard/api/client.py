@@ -250,14 +250,15 @@ def compute_host_list(request):
 
         return host_dict
 
-    return [compute_host2dict(h) for h in host_list(request)]
+    return [compute_host2dict(h) for h in host_list(request) if h.reservable]
 
 
 def reservation_calendar(request):
     """Return a list of all scheduled leases."""
 
     hypervisor_by_host_id = {
-        h.id: h.hypervisor_hostname for h in host_list(request)}
+        h.id: h.hypervisor_hostname for h
+        in host_list(request) if h.reservable}
 
     def host_reservation_dict(reservation, resource_id):
         host_reservation = dict(
