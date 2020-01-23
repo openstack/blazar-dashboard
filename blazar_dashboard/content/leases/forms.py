@@ -205,7 +205,8 @@ class CreateForm(forms.SelfHandlingForm):
                     'resource_properties': res_props,
                 })
         if data['network_ip_count'] > 0:
-            network_id = conf.floatingip_reservation.get('network_id')
+            network_id = api.client.get_floatingip_network_id(
+                request, conf.floatingip_reservation.get('network_name_regex'))
             reservations.append(
                 {
                     'resource_type': 'virtual:floatingip',
