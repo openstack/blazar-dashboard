@@ -205,12 +205,8 @@ def compute_host_available(request, start_date, end_date):
     specified date range.
     """
     def check_host_unavailable(reservation):
-        lease_start = datetime.strptime(
-            reservation['start_date'],
-            '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=UTC)
-        lease_end = datetime.strptime(
-            reservation['end_date'],
-            '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=UTC)
+        lease_start = _parse_api_datestr(reservation['start_date'])
+        lease_end = _parse_api_datestr(reservation['end_date'])
 
         if (lease_start > start_date and lease_start < end_date):
             return True
@@ -242,44 +238,38 @@ def node_in_lease(request, lease_id):
         if any((r['lease_id'] == lease_id) for r in h.reservations)]
 
 
-def compute_host_list(request):
-    """Return a list of compute hosts available for reservation."""
+def reservation_calendar(request):
+    """Return a list of all scheduled leases."""
+
     def compute_host2dict(h):
-        host_dict = dict(
+        return dict(
             hypervisor_hostname=h.hypervisor_hostname, vcpus=h.vcpus,
             memory_mb=h.memory_mb, local_gb=h.local_gb, cpu_info=h.cpu_info,
             hypervisor_type=h.hypervisor_type, node_type=h.node_type)
 
-        return host_dict
-
-    return [compute_host2dict(h) for h in host_list(request) if h.reservable]
-
-
-def reservation_calendar(request):
-    """Return a list of all scheduled leases."""
-
-    hypervisor_by_host_id = {
-        h.id: h.hypervisor_hostname for h
-        in host_list(request) if h.reservable}
+    hosts_by_id = {h.id: h for h in host_list(request) if h.reservable}
 
     def host_reservation_dict(reservation, resource_id):
         host_reservation = dict(
-            name=reservation.get('name', None),
-            project_id=reservation.get('project_id', None),
-            start_date=reservation.get('start_date', None),
-            end_date=reservation.get('end_date', None),
-            id=reservation.get('id', None),
-            status=reservation.get('status', None),
-            hypervisor_hostname=hypervisor_by_host_id[resource_id])
+            name=reservation.get('name'),
+            project_id=reservation.get('project_id'),
+            start_date=_parse_api_datestr(reservation['start_date']),
+            end_date=_parse_api_datestr(reservation['end_date']),
+            id=reservation['id'],
+            status=reservation.get('status'),
+            hypervisor_hostname=hosts_by_id[resource_id].hypervisor_hostname)
 
         return {k: v for k, v in host_reservation.items() if v is not None}
 
     host_reservations = [
         [host_reservation_dict(r, alloc.resource_id)
-            for r in alloc.reservations]
+            for r in alloc.reservations
+            if alloc.resource_id in hosts_by_id]
         for alloc in host_allocations_list(request)]
 
-    return list(chain(*host_reservations))
+    compute_hosts = [compute_host2dict(h) for h in hosts_by_id.values()]
+
+    return compute_hosts, list(chain(*host_reservations))
 
 
 def network_list(request):
@@ -324,9 +314,13 @@ def network_reservation_calendar(request):
         project_id;
     '''
     cursor.execute(sql)
-    host_reservations = dictfetchall(cursor)
+    network_reservations = dictfetchall(cursor)
 
-    return host_reservations
+    for r in network_reservations:
+        r['start_date'] = r['start_date'].replace(tzinfo=UTC)
+        r['end_date'] = r['end_date'].replace(tzinfo=UTC)
+
+    return network_reservations
 
 
 def extra_capability_names(request):
@@ -403,3 +397,12 @@ def get_floatingip_network_id(request, network_name_regex):
         if re.match(pattern, str(n['name']))]
 
     return networks[0]
+
+
+def _parse_api_datestr(datestr):
+    if datestr is None:
+        return datestr
+
+    dateobj = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S.%f")
+
+    return dateobj.replace(tzinfo=UTC)

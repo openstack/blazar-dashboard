@@ -53,8 +53,9 @@ class CalendarView(views.APIView):
 
 def calendar_data_view(request):
     data = {}
-    data['compute_hosts'] = api.client.compute_host_list(request)
-    data['reservations'] = [with_utc_dates(r) for r in api.client.reservation_calendar(request)]
+    compute_hosts, reservations = api.client.reservation_calendar(request)
+    data['compute_hosts'] = compute_hosts
+    data['reservations'] = reservations
     return JsonResponse(data)
 
 
@@ -65,21 +66,9 @@ class NetworkCalendarView(views.APIView):
 def network_calendar_data_view(request):
     data = {}
     data['networks'] = api.client.network_list(request)
-    data['reservations'] = [with_utc_dates(r) for r in api.client.network_reservation_calendar(request)]
+    data['reservations'] = api.client.network_reservation_calendar(request)
     return JsonResponse(data)
 
-def with_utc_dates(reservation):
-    def add_utc_tz(blazar_api_datestr):
-        if isinstance(blazar_api_datestr, datetime):
-            dateobj = blazar_api_datestr
-        else:
-            dateobj = datetime.strptime(blazar_api_datestr, "%Y-%m-%dT%H:%M:%S.%f")
-        return dateobj.replace(tzinfo=timezone('UTC'))
-
-    for date_key in ['start_date', 'end_date']:
-        reservation[date_key] = add_utc_tz(reservation.get(date_key))
-
-    return reservation
 
 def extra_capability_names(request):
     data = {
