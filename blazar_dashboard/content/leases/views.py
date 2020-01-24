@@ -70,7 +70,10 @@ def network_calendar_data_view(request):
 
 def with_utc_dates(reservation):
     def add_utc_tz(blazar_api_datestr):
-        dateobj = datetime.strptime(blazar_api_datestr, "%Y-%m-%dT%H:%M:%S.%f")
+        if isinstance(blazar_api_datestr, datetime):
+            dateobj = blazar_api_datestr
+        else:
+            dateobj = datetime.strptime(blazar_api_datestr, "%Y-%m-%dT%H:%M:%S.%f")
         return dateobj.replace(tzinfo=timezone('UTC'))
 
     for date_key in ['start_date', 'end_date']:
