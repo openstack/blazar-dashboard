@@ -75,7 +75,7 @@ def with_utc_dates(reservation):
 
     for date_key in ['start_date', 'end_date']:
         reservation[date_key] = add_utc_tz(reservation.get(date_key))
-        
+
     return reservation
 
 def extra_capability_names(request):
@@ -109,11 +109,13 @@ class CreateView(forms.ModalFormView):
 
     def get_context_data(self, **kwargs):
         context = super(CreateView, self).get_context_data(**kwargs)
-        tz = timezone(self.request.session.get('django_timezone', self.request.COOKIES.get('django_timezone', 'UTC')))
+        tz = timezone(self.request.session.get('django_timezone',
+                      self.request.COOKIES.get('django_timezone', 'UTC')))
         context['timezone'] = tz
-        context['offset'] = int((datetime.now(tz).utcoffset().total_seconds() / 60) * -1)
+        context['offset'] = int(
+            (datetime.now(tz).utcoffset().total_seconds() / 60) * -1)
         context['enable_floatingip_reservations'] = (
-            conf.floatingip_reservation.get('network_id') is not None)
+            conf.floatingip_reservation.get('network_name_regex') is not None)
         return context
 
     # def get_success_url(self):
