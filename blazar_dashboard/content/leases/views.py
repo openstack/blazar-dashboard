@@ -65,8 +65,9 @@ class NetworkCalendarView(views.APIView):
 
 def network_calendar_data_view(request):
     data = {}
-    data['networks'] = api.client.network_list(request)
-    data['reservations'] = api.client.network_reservation_calendar(request)
+    networks, reservations = api.client.network_reservation_calendar(request)
+    data['networks'] = networks
+    data['reservations'] = reservations
     return JsonResponse(data)
 
 
