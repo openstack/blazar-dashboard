@@ -52,6 +52,7 @@ PRETTY_TYPE_NAMES = OrderedDict([
 
 class Lease(base.APIDictWrapper):
     """Represents one Blazar lease."""
+
     _attrs = ['id', 'name', 'start_date', 'end_date', 'user_id', 'project_id',
               'before_end_date', 'status', 'degraded']
 
@@ -75,6 +76,23 @@ class Host(base.APIDictWrapper):
         if not cpu_info_dict:
             cpu_info_dict = '{}'
         return eval(cpu_info_dict)
+
+    def extra_capabilities(self):
+        excaps = {}
+        for k, v in self._apidict.items():
+            if k not in self._attrs:
+                excaps[k] = v
+        return excaps
+
+
+class Network(base.APIDictWrapper):
+    """Represents one Blazar network."""
+
+    _attrs = ['id', 'network_type', 'physical_network', 'segment_id',
+              'created_at', 'updated_at']
+
+    def __init__(self, apiresource):
+        super(Network, self).__init__(apiresource)
 
     def extra_capabilities(self):
         excaps = {}
@@ -178,6 +196,18 @@ def host_allocations_list(request):
     return [Allocation(a) for a in allocations]
 
 
+def network_list(request):
+    """List networks."""
+    networks = blazarclient(request).network.list()
+    return [Network(n) for n in networks]
+
+
+def network_allocations_list(request):
+    """List allocations for all networks."""
+    allocations = blazarclient(request).network.list_allocations()
+    return [Allocation(a) for a in allocations]
+
+
 def dictfetchall(cursor):
     "Returns all rows from a cursor as a dict"
     desc = cursor.description
@@ -272,55 +302,37 @@ def reservation_calendar(request):
     return compute_hosts, list(chain(*host_reservations))
 
 
-def network_list(request):
-    """Return a list of networks available for reservation"""
-    # TODO > USE CLIENT
-    sql = '''\
-    SELECT
-        physical_network,
-        segment_id
-    FROM
-        network_segments
-    '''
-    cursor = get_cursor_for_request(request)
-    cursor.execute(sql)
-    networks = dictfetchall(cursor)
-
-    return networks
-
-
 def network_reservation_calendar(request):
-    """Return a list of all scheduled leases."""
-    cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT
-        l.name,
-        l.project_id,
-        l.start_date,
-        l.end_date,
-        r.id,
-        r.status,
-        n.segment_id
-    FROM
-        network_allocations na
-        JOIN network_segments n ON n.id = na.network_id
-        JOIN reservations r ON r.id = na.reservation_id
-        JOIN leases l ON l.id = r.lease_id
-    WHERE
-        r.deleted IS NULL
-        AND na.deleted IS NULL
-    ORDER BY
-        start_date,
-        project_id;
-    '''
-    cursor.execute(sql)
-    network_reservations = dictfetchall(cursor)
+    """Return a list of all scheduled network leases."""
 
-    for r in network_reservations:
-        r['start_date'] = r['start_date'].replace(tzinfo=UTC)
-        r['end_date'] = r['end_date'].replace(tzinfo=UTC)
+    def network2dict(n):
+        return dict(
+            network_type=n.network_type, physical_network=n.physical_network,
+            segment_id=n.segment_id)
 
-    return network_reservations
+    networks_by_id = {n.id: n for n in network_list(request)}
+
+    def network_reservation_dict(reservation, resource_id):
+        network_reservation = dict(
+            name=reservation.get('name'),
+            project_id=reservation.get('project_id'),
+            start_date=_parse_api_datestr(reservation['start_date']),
+            end_date=_parse_api_datestr(reservation['end_date']),
+            id=reservation['id'],
+            status=reservation.get('status'),
+            segment_id=networks_by_id[resource_id].segment_id)
+
+        return {k: v for k, v in network_reservation.items() if v is not None}
+
+    network_reservations = [
+        [network_reservation_dict(r, alloc.resource_id)
+            for r in alloc.reservations
+            if alloc.resource_id in networks_by_id]
+        for alloc in network_allocations_list(request)]
+
+    networks = [network2dict(n) for n in networks_by_id.values()]
+
+    return networks, list(chain(*network_reservations))
 
 
 def extra_capability_names(request):
