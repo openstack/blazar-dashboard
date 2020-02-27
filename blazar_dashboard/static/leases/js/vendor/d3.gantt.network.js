@@ -59,10 +59,17 @@ d3.gantt.network = function(options) {
 
   function tooltipContent(d) {
     var fmt = d3.time.format('%-m/%d/%Y at %-I:%M %p');
-    return '<div class="tooltip-content"><dl><dt>Project</dt><dd>'
-      + d.data.project_id
-      + '</dd><dt>Name</dt><dd>'
-      + d.data.name
+    var toolTipStr = '<div class="tooltip-content">'
+
+    if ('project_id' in d.data) {
+        toolTipStr += '<dl><dt>Project</dt><dd>' + d.data.project_id
+    }
+
+    if ('name' in d.data) {
+        toolTipStr += '</dd><dt>Name</dt><dd>' + d.data.name
+    }
+
+    return toolTipStr
       + '</dd><dt>Networks</dt><dd>'
       + d.data.networks.join('<br>')
       + '</dd><dt>Reserved</dt><dd>'
