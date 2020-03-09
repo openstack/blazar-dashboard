@@ -52,7 +52,7 @@ d3.gantt = function(options) {
     y = d3.scale.ordinal().domain(taskTypes).rangeRoundBands([0, height - margin.top - margin.bottom], .1);
     xAxis = makeXAxis().tickFormat(d3.time.format(tickFormat));
     yAxis = makeYAxis().tickFormat(function(d) {
-      return d.split('-')[0] + '...';
+      return d.split('-')[0];
     });
     gridX = makeXAxis().tickSize(-height + margin.top + margin.bottom, 0, 0).tickFormat('');
   };

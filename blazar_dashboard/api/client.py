@@ -12,17 +12,15 @@
 
 from __future__ import absolute_import
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from datetime import datetime
 from itertools import chain
 import logging
 from pytz import UTC
 import re
-from six.moves.urllib.parse import urlparse
 
 from django.db import connections
 from django.utils.translation import ugettext_lazy as _
-import six
 
 from horizon import exceptions
 from horizon.utils.memoized import memoized
@@ -66,7 +64,8 @@ class Host(base.APIDictWrapper):
     _attrs = ['id', 'hypervisor_hostname', 'hypervisor_type',
               'hypervisor_version', 'vcpus', 'cpu_info', 'memory_mb',
               'local_gb', 'status', 'created_at', 'updated_at',
-              'service_name', 'trust_id', 'reservable', 'node_type']
+              'service_name', 'trust_id', 'reservable', 'node_type',
+              'node_name']
 
     def __init__(self, apiresource):
         super(Host, self).__init__(apiresource)
@@ -275,7 +274,8 @@ def reservation_calendar(request):
         return dict(
             hypervisor_hostname=h.hypervisor_hostname, vcpus=h.vcpus,
             memory_mb=h.memory_mb, local_gb=h.local_gb, cpu_info=h.cpu_info,
-            hypervisor_type=h.hypervisor_type, node_type=h.node_type)
+            hypervisor_type=h.hypervisor_type, node_type=h.node_type,
+            node_name=h.node_name)
 
     hosts_by_id = {h.id: h for h in host_list(request) if h.reservable}
 
@@ -287,7 +287,8 @@ def reservation_calendar(request):
             end_date=_parse_api_datestr(reservation['end_date']),
             id=reservation['id'],
             status=reservation.get('status'),
-            hypervisor_hostname=hosts_by_id[resource_id].hypervisor_hostname)
+            hypervisor_hostname=hosts_by_id[resource_id].hypervisor_hostname,
+            node_name=hosts_by_id[resource_id].node_name)
 
         return {k: v for k, v in host_reservation.items() if v is not None}
 

@@ -53,12 +53,12 @@
             return r.id === this.id;
           },
           reservation
-        ).map(function(h) { return h.hypervisor_hostname; });
+        ).map(function(h) { return h.node_name; });
 
         return {
           'startDate': new Date(reservation.start_date),
           'endDate': new Date(reservation.end_date),
-          'taskName': reservation.hypervisor_hostname,
+          'taskName': reservation.node_name,
           'status': reservation.status,
           'data': reservation
         }
@@ -89,7 +89,7 @@
       chooser.prop('disabled', false);
 
       var taskNames = $.map(resp.compute_hosts, function(host, i) {
-        return host.hypervisor_hostname;
+        return host.node_name;
       });
       /* set initial time range */
       var timeDomain = computeTimeDomain(7);
@@ -161,7 +161,7 @@
 
       var filteredTaskNames = hosts
         .filter(function (host) {return nodeType === '*' || nodeType === host.node_type})
-        .map(function (host) {return host.hypervisor_hostname});
+        .map(function (host) {return host.node_name});
 
       tasks = all_tasks.filter(function(task) {
         return filteredTaskNames.indexOf(task.taskName) >= 0
