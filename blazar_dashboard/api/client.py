@@ -257,11 +257,16 @@ def compute_host_available(request, start_date, end_date):
 def node_in_lease(request, lease_id):
     """Return list of hypervisor_hostnames in a lease."""
     hypervisor_by_host_id = {
-        h.id: h.hypervisor_hostname for h in host_list(request)}
+        h.id: {
+            'hypervisor_hostname': h.hypervisor_hostname,
+            'node_name': h.node_name}
+        for h in host_list(request)}
 
     return [
         dict(
-            hypervisor_hostname=hypervisor_by_host_id[h.resource_id],
+            hypervisor_hostname=hypervisor_by_host_id[h.resource_id].get(
+                'hypervisor_hostname'),
+            node_name=hypervisor_by_host_id[h.resource_id].get('node_name'),
             deleted=False)
         for h in host_allocations_list(request)
         if any((r['lease_id'] == lease_id) for r in h.reservations)]
