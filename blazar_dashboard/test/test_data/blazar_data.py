@@ -176,6 +176,7 @@ class DummyHypervisor(object):
     def __init__(self, host_name):
         self.hypervisor_hostname = host_name
 
+
 hypervisor_sample1 = DummyHypervisor('compute-1')
 hypervisor_sample2 = DummyHypervisor('compute-2')
 

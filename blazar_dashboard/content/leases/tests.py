@@ -11,9 +11,9 @@
 #    under the License.
 
 from datetime import datetime
+from unittest import mock
 
 from django.urls import reverse
-import mock
 import pytz
 
 from blazar_dashboard import api

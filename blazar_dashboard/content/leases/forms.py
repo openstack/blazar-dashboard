@@ -324,14 +324,14 @@ class UpdateForm(forms.SelfHandlingForm):
         reservations = cleaned_data.get("reservations", None)
 
         if start_time:
-            valid = re.match('^[+-]\d+[dhm]$', start_time)
+            valid = re.match(r'^[+-]\d+[dhm]$', start_time)
             if not valid:
                 raise forms.ValidationError("The start/end time must be "
                                             "a form of +/- number d/h/m. "
                                             "(e.g. +1h)")
 
         if end_time:
-            valid = re.match('^[+-]\d+[dhm]$', end_time)
+            valid = re.match(r'^[+-]\d+[dhm]$', end_time)
             if not valid:
                 raise forms.ValidationError("The start/end time must be "
                                             "a form of +/- number d/h/m. "

@@ -148,9 +148,6 @@ html_theme = 'openstackdocs'
 # directly to the root of the documentation.
 # html_extra_path = []
 
-# Must set this variable to include year, month, day, hours, and minutes.
-html_last_updated_fmt = '%Y-%m-%d %H:%M'
-
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
 # html_use_smartypants = True
