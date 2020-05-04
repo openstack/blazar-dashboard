@@ -28,11 +28,8 @@ urlpatterns = [
     url(r'^network_calendar\.json$', leases_views.network_calendar_data_view,
         name='network_calendar_data'),
 
-    url(r'^extras/names$', leases_views.extra_capability_names,
-        name='extra_names'),
-    url(r'^extras/values/(?P<name>[^/]+)$',
-        leases_views.extra_capability_values,
-        name='extra_values'),
+    url(r'^extras\.json$', leases_views.extra_capabilities,
+        name='extra_capabilities'),
 
     url(r'^$', leases_views.IndexView.as_view(), name='index'),
     url(r'^create/$', leases_views.CreateView.as_view(), name='create'),

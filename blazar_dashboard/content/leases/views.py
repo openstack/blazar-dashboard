@@ -71,18 +71,10 @@ def network_calendar_data_view(request):
     return JsonResponse(data)
 
 
-def extra_capability_names(request):
+def extra_capabilities(request):
     data = {
-        'extra_capability_names': api.client.extra_capability_names(request),
-    }
-    return JsonResponse(data)
-
-
-def extra_capability_values(request, name):
-    data = {
-        'extra_capability_values': api.client.extra_capability_values(
-            request, name),
-    }
+        'host_extra_capabilities': api.client.computehost_extra_capabilities(
+            request)}
     return JsonResponse(data)
 
 

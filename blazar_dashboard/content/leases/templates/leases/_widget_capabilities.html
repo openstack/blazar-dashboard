@@ -17,9 +17,8 @@
 function capabilitiesjs() {
     'use strict';
 
-    var capabilityNames = [];
-    var capabilityValues = {};
-    var capabilityRows = [];
+    var hostCapabilityNames = [];
+    var hostCapabilityValues = {};
 
     var criteriaCounter = 0; // gives distinct values to the input names
 
@@ -27,8 +26,9 @@ function capabilitiesjs() {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-            capabilityNames = JSON.parse(this.responseText)['extra_capability_names'];
-            capabilityNames.sort();
+            hostCapabilityValues = JSON.parse(this.responseText)['host_extra_capabilities'];
+            hostCapabilityNames = Object.keys(hostCapabilityValues);
+            hostCapabilityNames.sort();
             var props = document.getElementById('criteria-payload').getAttribute('form_data');
             if(props && props != 'None'){
                 props = JSON.parse(props);
@@ -47,7 +47,7 @@ function capabilitiesjs() {
             addCriterionItem('node_type');
         }
     };
-    xhr.open('GET', '{% url "horizon:project:leases:extra_names" %}', true);
+    xhr.open('GET', '{% url "horizon:project:leases:extra_capabilities" %}', true);
     xhr.send();
 
     var crl = document.querySelector('#criteria-list');
@@ -106,7 +106,7 @@ function capabilitiesjs() {
         var name_selector = criterion.querySelector('.cri-name');
         name_selector.id = 'criteria-{{ widget.name }}-id-' + index;
         name_selector.name = 'criteria-{{ widget.name }}-name-' + index;
-        capabilityNames.forEach(function(cn) {
+        hostCapabilityNames.forEach(function(cn) {
             name_selector.appendChild(new Option(cn, cn));
         });
         name_selector.addEventListener('change', changeCriterionName, false);
@@ -118,7 +118,6 @@ function capabilitiesjs() {
         var value_selector = criterion.querySelector('.cri-val');
         value_selector.id = 'criteria-resource_properties-value-' + index;
         value_selector.name = 'criteria-{{ widget.name }}-value-' + index;
-        value_selector.addEventListener('change', displayMatchingHostCount, false);
 
         var remove_button = criterion.querySelector('.cri-rm');
         remove_button.addEventListener('click', removeCriterion, false);
@@ -143,38 +142,11 @@ function capabilitiesjs() {
         var value_selector = criterion.querySelector('.cri-val');
 
         value_selector.innerHTML = '<option disabled selected></option>'; // clear
-
-        if (capabilityValues[name_selector.value]) {
-            console.log('using cached values');
-            fillCriteriaValues(value_selector, name_selector.value);
-            displayMatchingHostCount();
-        } else {
-            console.log('need to load values for name=' + name_selector.value);
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    var newRows = JSON.parse(this.responseText)['extra_capability_values'];
-                    Array.prototype.push.apply(capabilityRows, newRows);
-
-                    var newCV = {};
-                    newRows.forEach(function(r) {
-                        if (newCV[r['capability_value']]) {
-                            newCV[r['capability_value']].push(r['computehost_id']);
-                        } else {
-                            newCV[r['capability_value']] = [r['computehost_id']];
-                        }
-                    });
-                    capabilityValues[name_selector.value] = newCV;
-                    fillCriteriaValues(value_selector, name_selector.value);
-                }
-            };
-            xhr.open('GET', '{% url "horizon:project:leases:extra_values" name="NAME" %}'.replace('NAME', name_selector.value), true);
-            xhr.send();
-        }
+        fillCriteriaValues(value_selector, name_selector.value);
     }
 
     function fillCriteriaValues(element, name) {
-        var values = Object.keys(capabilityValues[name]);
+        var values = hostCapabilityValues[name];
         values.sort();
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
@@ -210,41 +182,6 @@ function capabilitiesjs() {
         var criterion = event.target.parentNode;
         criterion.parentNode.removeChild(criterion);
         displayWarningIfEmpty();
-        displayMatchingHostCount();
-    }
-
-    function hostsMatchingCriterion(criterion) {
-        var name_selector = criterion.querySelector('.cri-name');
-        var value_selector = criterion.querySelector('.cri-val');
-        return capabilityValues[name_selector.value][value_selector.value];
-    }
-
-    function displayMatchingHostCount() {
-        return; // fix later.
-        var display = document.querySelector('#criteria-matchinfo');
-        var criteria = document.querySelectorAll('.criterion');
-        var count;
-
-        if (criteria.length === 0) {
-            count = '*';
-        } else {
-            // TODO(nicktimko): support computing it for things other than ==.
-            // display.hidden =
-            //     document.querySelectorAll('.criterion .cri-equality option:checked[value="eq"]').length
-            //     !== criteria.length;
-
-            // var hosts = hostsMatchingCriterion(criteria.pop()) // prime the intersectionining
-            // criteria.forEach(function (cri) {
-            //     hosts.filter(function(n) {return hostsMatchingCriterion(cri).includes(n)});
-            // });
-            var hosts = hostsMatchingCriterion(criteria[0]); // prime the intersectionining of sets
-            for (var i = 1; i < criteria.length; ++i) {
-                hosts = hosts.filter(function(n) {return hostsMatchingCriterion(criteria[i]).includes(n)});
-            }
-            count = hosts.length;
-        }
-
-        display.textContent = 'Filters match ' + count + ' hosts.';
     }
 
     var addbutton = document.querySelector('#criteria-add');

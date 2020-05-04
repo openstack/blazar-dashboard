@@ -109,6 +109,14 @@ class Allocation(base.APIDictWrapper):
         super(Allocation, self).__init__(apiresource)
 
 
+class ExtraCapability(base.APIDictWrapper):
+
+    _attrs = ['property', 'private', 'capability_values']
+
+    def __init__(self, apiresource):
+        super(ExtraCapability, self).__init__(apiresource)
+
+
 @memoized
 def blazarclient(request):
     try:
@@ -195,6 +203,12 @@ def host_allocations_list(request):
     return [Allocation(a) for a in allocations]
 
 
+def host_capabilities_list(request):
+    extra_capabilities = blazarclient(
+        request).host.list_capabilities(detail=True)
+    return [ExtraCapability(e) for e in extra_capabilities]
+
+
 def network_list(request):
     """List networks."""
     networks = blazarclient(request).network.list()
@@ -205,27 +219,6 @@ def network_allocations_list(request):
     """List allocations for all networks."""
     allocations = blazarclient(request).network.list_allocations()
     return [Allocation(a) for a in allocations]
-
-
-def dictfetchall(cursor):
-    "Returns all rows from a cursor as a dict"
-    desc = cursor.description
-    return [
-        dict(zip([col[0] for col in desc], row))
-        for row in cursor.fetchall()
-    ]
-
-
-def get_cursor_for_request(request):
-    """
-    Get a cursor for the database in the request's region
-
-    The DATABASES setting must be configured with all the regions to be used
-    named like "blazar-CHI@TACC", "blazar-CHI@UC", and so on.
-    """
-    region = request.session.get('services_region')
-    connection = connections['blazar-' + region]
-    return connection.cursor()
 
 
 def compute_host_available(request, start_date, end_date):
@@ -341,70 +334,10 @@ def network_reservation_calendar(request):
     return networks, list(chain(*network_reservations))
 
 
-def extra_capability_names(request):
-    """
-    Return all the names for possible selections.
-    """
-    cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT DISTINCT
-        capability_name
-    FROM
-        computehost_extra_capabilities
-    '''
-    cursor.execute(sql)
-    # available = dictfetchall(cursor)
-    available = [row[0] for row in cursor.fetchall()]
-
-    cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT DISTINCT
-        capability_name
-    FROM
-        networksegment_extra_capabilities
-    '''
-    cursor.execute(sql)
-    # available = dictfetchall(cursor)
-    available += [row[0] for row in cursor.fetchall()]
-    return list(set(available))
-
-
-def extra_capability_values(request, name):
-    """
-    Return the capabilities with a given "name". The client can cache/combine
-    the rows together to build up a full copy of the extra capabilities table
-    if they really want. Then they can do the "what-if" filtering themselves
-    to count hosts.
-
-    They could maybe mix that with the calendar data to even see if the chosen
-    number of hosts are free. Might need to do the lookup between
-    computehost_id (small integers) and the UUID via the uid name:value pairs.
-    """
-    cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT
-        id, computehost_id, capability_name, capability_value
-    FROM
-        computehost_extra_capabilities
-    WHERE
-        capability_name = %s
-    '''
-    cursor.execute(sql, [name])
-    rows = dictfetchall(cursor)
-
-    cursor = get_cursor_for_request(request)
-    sql = '''\
-    SELECT
-        id, network_id, capability_name, capability_value
-    FROM
-        networksegment_extra_capabilities
-    WHERE
-        capability_name = %s
-    '''
-    cursor.execute(sql, [name])
-    rows += dictfetchall(cursor)
-
-    return rows
+def computehost_extra_capabilities(request):
+    return {
+        x.property: x.capability_values for x
+        in host_capabilities_list(request)}
 
 
 def get_floatingip_network_id(request, network_name_regex):
