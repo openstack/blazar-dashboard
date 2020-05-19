@@ -45,6 +45,8 @@ function capabilitiesjs() {
                 return;
             }
             addCriterionItem('node_type');
+            setDefaultNodeType();
+
         }
     };
     xhr.open('GET', '{% url "horizon:project:leases:extra_capabilities" %}', true);
@@ -155,7 +157,7 @@ function capabilitiesjs() {
     }
 
     function setDefaultNodeType(){
-        var nodeOptions = $("#resource-node-type");
+        var nodeOptions = $("#criteria-resource_properties-value-0");
         try {
           nodeOptions.find('[value="compute_haswell"]').attr("selected","selected");
         } catch(err) {
