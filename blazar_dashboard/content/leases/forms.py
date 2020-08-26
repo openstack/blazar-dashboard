@@ -208,7 +208,7 @@ class CreateForm(forms.SelfHandlingForm):
             LOG.error('Error submitting lease: %s', e)
             exceptions.handle(request,
                               message='An error occurred while creating this '
-                                      'lease: %s. Please try again.' % e)
+                                      'lease. Please try again.')
 
     def clean(self):
         cleaned_data = super(CreateForm, self).clean()
@@ -313,7 +313,7 @@ class UpdateForm(forms.SelfHandlingForm):
             LOG.error('Error updating lease: %s', e)
             exceptions.handle(request,
                               message="An error occurred while updating this"
-                                      " lease: %s. Please try again." % e)
+                                      " lease. Please try again.")
 
     def clean(self):
         cleaned_data = super(UpdateForm, self).clean()
