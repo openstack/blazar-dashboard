@@ -48,7 +48,7 @@ class UpdateForm(forms.SelfHandlingForm):
             LOG.error('Error updating host: %s', e)
             exceptions.handle(request,
                               message="An error occurred while updating this"
-                                      " host: %s. Please try again." % e)
+                                      " host. Please try again.")
 
     def clean(self):
         cleaned_data = super(UpdateForm, self).clean()
