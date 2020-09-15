@@ -1,0 +1,6 @@
+---
+security:
+  - |
+    Uses ``json.loads` instead of ``eval()`` for JSON parsing, which could
+    allow users of the Blazar dashboard to trigger code execution on the
+    Horizon host as the user the Horizon service runs under.
