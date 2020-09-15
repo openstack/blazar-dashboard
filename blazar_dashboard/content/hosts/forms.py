@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
 import logging
 
 from django.utils.translation import ugettext_lazy as _
@@ -54,11 +55,11 @@ class UpdateForm(forms.SelfHandlingForm):
 
         values = cleaned_data.get('values')
         try:
-            values = eval(values)
+            values = json.loads(values)
             cleaned_data['values'] = values
-        except (SyntaxError, NameError):
+        except json.JSONDecodeError:
             raise forms.ValidationError(
-                _('Values must written in JSON')
+                _('Values must be written in JSON')
             )
 
         return cleaned_data
