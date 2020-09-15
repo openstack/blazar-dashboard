@@ -14,6 +14,7 @@
 #    under the License.
 
 import datetime
+import json
 import logging
 import re
 
@@ -339,11 +340,11 @@ class UpdateForm(forms.SelfHandlingForm):
 
         if reservations:
             try:
-                reservations = eval(reservations)
+                reservations = json.loads(reservations)
                 cleaned_data['reservations'] = reservations
-            except (SyntaxError, NameError):
+            except json.JSONDecodeError:
                 raise forms.ValidationError(
-                    _('Reservation values must written in JSON')
+                    _('Reservation values must be written in JSON')
                 )
 
         if not (lease_name or start_time or end_time or reservations):
