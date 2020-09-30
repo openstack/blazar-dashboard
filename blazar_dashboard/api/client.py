@@ -15,6 +15,7 @@ from __future__ import absolute_import
 from collections import OrderedDict
 from datetime import datetime
 from itertools import chain
+import json
 import logging
 from pytz import UTC
 import re
@@ -74,7 +75,7 @@ class Host(base.APIDictWrapper):
         cpu_info_dict = getattr(self, 'cpu_info', '{}')
         if not cpu_info_dict:
             cpu_info_dict = '{}'
-        return eval(cpu_info_dict)
+        return json.loads(cpu_info_dict)
 
     def extra_capabilities(self):
         excaps = {}

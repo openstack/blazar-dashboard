@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
 import logging
 
 from django.utils.translation import ugettext_lazy as _
@@ -79,11 +80,11 @@ class AddExtraCapsAction(workflows.Action):
 
         if extra_caps:
             try:
-                extra_caps = eval(extra_caps)
+                extra_caps = json.loads(extra_caps)
                 cleaned_data['extra_caps'] = extra_caps
-            except (SyntaxError, NameError):
+            except json.JSONDecodeError:
                 raise forms.ValidationError(
-                    _('Extra capabilities must written in JSON')
+                    _('Extra capabilities must be written in JSON')
                 )
 
         return cleaned_data
