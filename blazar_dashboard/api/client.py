@@ -248,12 +248,16 @@ def compute_host_available(request, start_date, end_date):
     return len(available_hosts)
 
 
+def compute_host_display_name(host):
+    return getattr(host, 'node_name', 'node{}'.format(host.id))
+
+
 def node_in_lease(request, lease_id):
     """Return list of hypervisor_hostnames in a lease."""
     hypervisor_by_host_id = {
         h.id: {
             'hypervisor_hostname': h.hypervisor_hostname,
-            'node_name': h.node_name}
+            'node_name': compute_host_display_name(h)}
         for h in host_list(request)}
 
     return [
@@ -274,7 +278,7 @@ def reservation_calendar(request):
             hypervisor_hostname=h.hypervisor_hostname, vcpus=h.vcpus,
             memory_mb=h.memory_mb, local_gb=h.local_gb, cpu_info=h.cpu_info,
             hypervisor_type=h.hypervisor_type, node_type=h.node_type,
-            node_name=h.node_name)
+            node_name=compute_host_display_name(h))
 
     hosts_by_id = {h.id: h for h in host_list(request) if h.reservable}
 
@@ -287,7 +291,7 @@ def reservation_calendar(request):
             id=reservation['id'],
             status=reservation.get('status'),
             hypervisor_hostname=hosts_by_id[resource_id].hypervisor_hostname,
-            node_name=hosts_by_id[resource_id].node_name)
+            node_name=compute_host_display_name(hosts_by_id[resource_id]))
 
         return {k: v for k, v in host_reservation.items() if v is not None}
 
