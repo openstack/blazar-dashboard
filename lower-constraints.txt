@@ -45,7 +45,7 @@ python-ironicclient==1.11.0
 python-dateutil==2.7.0
 python-mimeparse==1.6.0
 pytz==2018.3
-PyYAML==3.12
+PyYAML==3.13
 rcssmin==1.0.6
 requests==2.18.4
 rfc3986==1.1.0
