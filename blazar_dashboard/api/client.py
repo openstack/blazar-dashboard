@@ -12,23 +12,22 @@
 
 from __future__ import absolute_import
 
-from collections import OrderedDict
 from datetime import datetime
 from itertools import chain
-import json
-import logging
-from pytz import UTC
 import re
 
-from django.db import connections
-from django.utils.translation import ugettext_lazy as _
-
-from horizon import exceptions
-from horizon.utils.memoized import memoized
-from openstack_dashboard.api import base
-from openstack_dashboard.api import neutron
+from pytz import UTC
 
 from blazarclient import client as blazar_client
+from collections import OrderedDict
+from django.db import connections
+from django.utils.translation import ugettext_lazy as _
+from horizon import exceptions
+from horizon.utils.memoized import memoized
+import json
+import logging
+from openstack_dashboard.api import base
+from openstack_dashboard.api import neutron
 
 
 LOG = logging.getLogger(__name__)
@@ -93,6 +92,22 @@ class Network(base.APIDictWrapper):
 
     def __init__(self, apiresource):
         super(Network, self).__init__(apiresource)
+
+    def extra_capabilities(self):
+        excaps = {}
+        for k, v in self._apidict.items():
+            if k not in self._attrs:
+                excaps[k] = v
+        return excaps
+
+
+class Device(base.APIDictWrapper):
+    """Represents one Blazar device."""
+
+    _attrs = ['id', 'name', 'resource_type', 'resource_driver']
+
+    def __init__(self, apiresource):
+        super(Device, self).__init__(apiresource)
 
     def extra_capabilities(self):
         excaps = {}
@@ -222,6 +237,18 @@ def network_allocations_list(request):
     return [Allocation(a) for a in allocations]
 
 
+def device_list(request):
+    """List devices."""
+    devices = blazarclient(request).device.list()
+    return [Device(d) for d in devices]
+
+
+def device_allocations_list(request):
+    """List allocations for all devices."""
+    allocations = blazarclient(request).device.list_allocations()
+    return [Allocation(a) for a in allocations]
+
+
 def compute_host_available(request, start_date, end_date):
     """
     Return the number of compute hosts available for reservation for the entire
@@ -337,6 +364,39 @@ def network_reservation_calendar(request):
     networks = [network2dict(n) for n in networks_by_id.values()]
 
     return networks, list(chain(*network_reservations))
+
+
+def device_reservation_calendar(request):
+    """Return a list of all scheduled device leases."""
+
+    def device2dict(d):
+        return dict(
+            name=d.name, resource_type=d.resource_type,
+            resource_driver=d.resource_driver)
+
+    devices_by_id = {d.id: d for d in device_list(request)}
+
+    def device_reservation_dict(reservation, resource_id):
+        device_reservation = dict(
+            name=reservation.get('name'),
+            project_id=reservation.get('project_id'),
+            start_date=_parse_api_datestr(reservation['start_date']),
+            end_date=_parse_api_datestr(reservation['end_date']),
+            id=reservation['id'],
+            status=reservation.get('status'),
+            device_id=devices_by_id[resource_id].id)
+
+        return {k: v for k, v in device_reservation.items() if v is not None}
+
+    device_reservations = [
+        [device_reservation_dict(r, alloc.resource_id)
+            for r in alloc.reservations
+            if alloc.resource_id in devices_by_id]
+        for alloc in network_allocations_list(request)]
+
+    devices = [device2dict(d) for d in devices_by_id.values()]
+
+    return devices, list(chain(*device_reservations))
 
 
 def computehost_extra_capabilities(request):

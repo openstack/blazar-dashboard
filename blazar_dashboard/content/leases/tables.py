@@ -14,16 +14,17 @@
 #    under the License.
 
 from datetime import datetime
-from functools import partial
 
-from django.template import defaultfilters as django_filters
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import ungettext_lazy
-from horizon import tables
-from horizon.utils import filters
 import pytz
 
 from blazar_dashboard import api
+from blazar_dashboard import conf
+from django.template import defaultfilters as django_filters
+from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
+from functools import partial
+from horizon import tables
+from horizon.utils import filters
 
 
 class CreateLease(tables.LinkAction):
@@ -53,7 +54,7 @@ class UpdateLease(tables.LinkAction):
 
 
 class ViewLeaseCalendar(tables.LinkAction):
-    ## TODO(nicktimko) move calendar to a panel
+    # TODO(nicktimko) move calendar to a panel
     name = "calendar"
     verbose_name = _("Host Calendar")
     url = "horizon:project:leases:calendar"
@@ -65,6 +66,14 @@ class ViewNetworkReservationCalendar(tables.LinkAction):
     name = "network_calendar"
     verbose_name = _("Network Calendar")
     url = "horizon:project:leases:network_calendar"
+    classes = ("btn-default", )
+    icon = "calendar"
+
+
+class ViewDeviceReservationCalendar(tables.LinkAction):
+    name = "device_calendar"
+    verbose_name = _("Device Calendar")
+    url = "horizon:project:leases:device_calendar"
     classes = ("btn-default", )
     icon = "calendar"
 
@@ -114,6 +123,9 @@ class LeasesTable(tables.DataTable):
     class Meta(object):
         name = "leases"
         verbose_name = _("Leases")
-        table_actions = (ViewLeaseCalendar, ViewNetworkReservationCalendar,
-                         CreateLease, DeleteLease, )
+        tactions = [ViewLeaseCalendar, ViewNetworkReservationCalendar,
+                    CreateLease, DeleteLease]
+        if conf.device_reservation.get('enabled'):
+            tactions.insert(2, ViewDeviceReservationCalendar)
+            table_actions = tuple(tactions)
         row_actions = (UpdateLease, DeleteLease, )

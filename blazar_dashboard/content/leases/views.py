@@ -14,16 +14,7 @@
 #    under the License.
 
 from datetime import datetime
-from django.urls import reverse
-from django.urls import reverse_lazy
-from django.http import JsonResponse
-from django.utils.translation import ugettext_lazy as _
-from horizon import exceptions
-from horizon import forms
-from horizon import tables
-from horizon import tabs
-from horizon import views
-from horizon.utils import memoized
+
 from pytz import timezone
 
 from blazar_dashboard import api
@@ -31,6 +22,16 @@ from blazar_dashboard import conf
 from blazar_dashboard.content.leases import forms as project_forms
 from blazar_dashboard.content.leases import tables as project_tables
 from blazar_dashboard.content.leases import tabs as project_tabs
+from django.http import JsonResponse
+from django.urls import reverse
+from django.urls import reverse_lazy
+from django.utils.translation import ugettext_lazy as _
+from horizon import exceptions
+from horizon import forms
+from horizon import tables
+from horizon import tabs
+from horizon import views
+from horizon.utils import memoized
 
 
 class IndexView(tables.DataTableView):
@@ -78,6 +79,18 @@ def extra_capabilities(request):
     return JsonResponse(data)
 
 
+class DeviceCalendarView(views.APIView):
+    template_name = 'project/leases/device_calendar.html'
+
+
+def device_calendar_data_view(request):
+    data = {}
+    devices, reservations = api.client.device_reservation_calendar(request)
+    data['devices'] = devices
+    data['reservations'] = reservations
+    return JsonResponse(data)
+
+
 class DetailView(tabs.TabView):
     tab_group_class = project_tabs.LeaseDetailTabs
     template_name = 'project/leases/detail.html'
@@ -95,7 +108,7 @@ class CreateView(forms.ModalFormView):
     def get_context_data(self, **kwargs):
         context = super(CreateView, self).get_context_data(**kwargs)
         tz = timezone(self.request.session.get('django_timezone',
-                      self.request.COOKIES.get('django_timezone', 'UTC')))
+                                               self.request.COOKIES.get('django_timezone', 'UTC')))
         context['timezone'] = tz
         context['offset'] = int(
             (datetime.now(tz).utcoffset().total_seconds() / 60) * -1)
