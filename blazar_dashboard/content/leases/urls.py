@@ -13,9 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.conf.urls import url
-
 from blazar_dashboard.content.leases import views as leases_views
+from django.conf.urls import url
 
 
 urlpatterns = [
@@ -27,6 +26,11 @@ urlpatterns = [
         name='network_calendar'),
     url(r'^network_calendar\.json$', leases_views.network_calendar_data_view,
         name='network_calendar_data'),
+
+    url(r'^device_calendar/$', leases_views.DeviceCalendarView.as_view(),
+        name='device_calendar'),
+    url(r'^device_calendar\.json$', leases_views.device_calendar_data_view,
+        name='device_calendar_data'),
 
     url(r'^extras\.json$', leases_views.extra_capabilities,
         name='extra_capabilities'),
