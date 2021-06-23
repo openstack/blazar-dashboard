@@ -252,8 +252,12 @@ def compute_host_display_name(host):
     return getattr(host, 'node_name', 'node{}'.format(host.id))
 
 
-def node_in_lease(request, lease_id):
+def nodes_in_lease(request, lease):
     """Return list of hypervisor_hostnames in a lease."""
+    if not any(
+        r['resource_type'] == 'physical:host' for r in lease['reservations']):
+        return []
+
     hypervisor_by_host_id = {
         h.id: {
             'hypervisor_hostname': h.hypervisor_hostname,
@@ -267,7 +271,7 @@ def node_in_lease(request, lease_id):
             node_name=hypervisor_by_host_id[h.resource_id].get('node_name'),
             deleted=False)
         for h in host_allocations_list(request)
-        if any((r['lease_id'] == lease_id) for r in h.reservations)]
+        if any((r['lease_id'] == lease['id']) for r in h.reservations)]
 
 
 def reservation_calendar(request):
