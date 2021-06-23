@@ -104,7 +104,7 @@ class Network(base.APIDictWrapper):
 class Device(base.APIDictWrapper):
     """Represents one Blazar device."""
 
-    _attrs = ['id', 'name', 'resource_type', 'resource_driver']
+    _attrs = ['id', 'name', 'device_type', 'device_driver']
 
     def __init__(self, apiresource):
         super(Device, self).__init__(apiresource)
@@ -375,8 +375,8 @@ def device_reservation_calendar(request):
 
     def device2dict(d):
         return dict(
-            name=d.name, resource_type=d.resource_type,
-            resource_driver=d.resource_driver)
+            name=d.name, device_type=d.device_type,
+            device_driver=d.device_driver)
 
     devices_by_id = {d.id: d for d in device_list(request)}
 
