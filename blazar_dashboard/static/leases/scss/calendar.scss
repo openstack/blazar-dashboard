@@ -18,6 +18,16 @@
   width: inherit;
 }
 
+#blazar-gantt-device {
+  width: 100%;
+  min-height: 800px;
+  position: relative;
+}
+
+#blazar-gantt-device .chart {
+  width: inherit;
+}
+
 .tooltip {
   position: absolute;
   top: 0;
