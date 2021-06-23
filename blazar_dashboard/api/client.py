@@ -396,7 +396,7 @@ def device_reservation_calendar(request):
         [device_reservation_dict(r, alloc.resource_id)
             for r in alloc.reservations
             if alloc.resource_id in devices_by_id]
-        for alloc in network_allocations_list(request)]
+        for alloc in device_allocations_list(request)]
 
     devices = [device2dict(d) for d in devices_by_id.values()]
 
