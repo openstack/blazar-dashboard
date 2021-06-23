@@ -9,7 +9,9 @@
 
 {% block modal-body %}
 <style>
-  .datepicker{z-index:1051!important;}
+  .datepicker {
+    z-index: 1051 !important;
+  }
 </style>
 <div class="row-fluid">
   <fieldset>
@@ -38,7 +40,7 @@
 <a href="{% url 'horizon:project:leases:index' %}" class="btn btn-default cancel">{% trans "Cancel" %}</a>
 <input class="btn btn-primary pull-right" type="submit" value="{% trans " Create" %}" />
 <script type='text/javascript' charset='utf-8'>
-  (function(window, horizon, $, undefined) {
+  (function (window, horizon, $, undefined) {
     'use strict';
 
     $('#id_name').attr('required', '');
@@ -60,7 +62,7 @@
       $('#timezone').hide();
     }
 
-    $('#id_number_of_days, #id_start_date').on('change', function(event) {
+    $('#id_number_of_days, #id_start_date').on('change', function (event) {
       var numberOfDays = $('#id_number_of_days').val();
       if (numberOfDays != '' || $('#id_start_date').val() != '') {
         setEndDateTime();
@@ -86,12 +88,12 @@
 
     function setHostInput() {
       var hostInputState = !$('#id_resource_type_host').prop('checked');
-      $('#host-options').find(':input').each(function(){$(this).attr('disabled', hostInputState)});
+      $('#host-options').find(':input').each(function () { $(this).attr('disabled', hostInputState) });
     }
 
     function setNetworkInput() {
       var networkInputState = !$('#id_resource_type_network').prop('checked');
-      $('#network-options').find(':input').each(function(){$(this).attr('disabled', networkInputState)});
+      $('#network-options').find(':input').each(function () { $(this).attr('disabled', networkInputState) });
     }
 
     try {

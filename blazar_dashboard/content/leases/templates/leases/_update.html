@@ -9,17 +9,17 @@
 
 {% block modal-body %}
 <div class="left">
-    <fieldset>
+  <fieldset>
     {% include "horizon/common/_form_fields.html" %}
-    </fieldset>
+  </fieldset>
 </div>
 <div class="right">
-    <h3>{% trans "Description" %}:</h3>
-    <p>{% trans "Update a lease with the provided values." %}</p>
+  <h3>{% trans "Description" %}:</h3>
+  <p>{% trans "Update a lease with the provided values." %}</p>
 </div>
 {% endblock %}
 
 {% block modal-footer %}
-  <a href="{% url 'horizon:project:leases:index' %}" class="btn btn-default cancel">{% trans "Cancel" %}</a>
-  <input class="btn btn-primary pull-right" type="submit" value="{% trans "Update" %}" />
+<a href="{% url 'horizon:project:leases:index' %}" class="btn btn-default cancel">{% trans "Cancel" %}</a>
+<input class="btn btn-primary pull-right" type="submit" value="{% trans " Update" %}" />
 {% endblock %}
