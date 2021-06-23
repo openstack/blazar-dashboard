@@ -123,9 +123,16 @@ class LeasesTable(tables.DataTable):
     class Meta(object):
         name = "leases"
         verbose_name = _("Leases")
-        tactions = [ViewLeaseCalendar, ViewNetworkReservationCalendar,
-                    CreateLease, DeleteLease]
+
+        table_actions = [CreateLease, DeleteLease,]
+        if conf.floatingip_reservation.get('enabled'):
+            # TODO: put in floating IP calendar support
+            pass
+        if conf.network_reservation.get('enabled'):
+            table_actions.insert(0, ViewNetworkReservationCalendar)
+        if conf.host_reservation.get('enabled'):
+            table_actions.insert(0, ViewLeaseCalendar)
         if conf.device_reservation.get('enabled'):
-            tactions.insert(2, ViewDeviceReservationCalendar)
-            table_actions = tuple(tactions)
+            table_actions.insert(0, ViewDeviceReservationCalendar)
+
         row_actions = (UpdateLease, DeleteLease, )
