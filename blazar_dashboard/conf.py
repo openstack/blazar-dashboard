@@ -6,7 +6,8 @@ host_reservation = (
     }))
 
 floatingip_reservation = (
-    getattr(settings, 'OPENSTACK_BLAZAR_FLOATINGIP_RESERVATION', {}))
+    getattr(settings, 'OPENSTACK_BLAZAR_FLOATINGIP_RESERVATION', {
+        'enabled': False, }))
 
 network_reservation = (
     getattr(settings, 'OPENSTACK_BLAZAR_NETWORK_RESERVATION', {

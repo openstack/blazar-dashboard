@@ -1,0 +1,9 @@
+{% load i18n %}
+
+{% block help_message %}
+{% if network_enabled %}
+<div class="alert alert-info">
+Network name is required when reserving a network.
+</div>
+{% endif %}
+{% endblock %}

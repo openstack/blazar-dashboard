@@ -1,24 +1,13 @@
-<div id="criteria" style="margin-bottom:50px">
-    <input id="criteria-payload" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
-    <div id="no-criteria-warning" class="alert alert-danger" hidden="hidden">
-        <strong>No filters are specified,</strong> random hardware will be
-        assigned. Recommend that you
-        <a href="#" class="cri-adder" data-cri-name="node_type">add a filter for a node type</a>
-        or <a href="#" class="cri-adder" data-cri-name="uid">a specific node ID</a>.
-    </div>
-    <div>
-        <ul id="criteria-list" class="form-inline" style="padding-inline-start:0px;">
-        </ul>
-    </div>
-    <button id="criteria-add" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success">Add Filter</button>
-</div>
-
-<script>
-function capabilitiesjs() {
+function capabilitiesjs(resource_type) {
     'use strict';
+    
+    var defaults = {'computehost': {'node_type': 'compute_haswell'},
+    		        'network': {'physical_network': 'physnet1'},
+    		        'device': {'vendor': 'Raspberry Pi'}
+    		        };
 
-    var hostCapabilityNames = [];
-    var hostCapabilityValues = {};
+    var capabilityNames = [];
+    var capabilityValues = {};
 
     var criteriaCounter = 0; // gives distinct values to the input names
 
@@ -26,9 +15,9 @@ function capabilitiesjs() {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-            hostCapabilityValues = JSON.parse(this.responseText)['host_extra_capabilities'];
-            hostCapabilityNames = Object.keys(hostCapabilityValues);
-            hostCapabilityNames.sort();
+            capabilityValues = JSON.parse(this.responseText)['extra_capabilities'];
+            capabilityNames = Object.keys(capabilityValues);
+            capabilityNames.sort();
             var props = document.getElementById('criteria-payload').getAttribute('form_data');
             if(props && props != 'None'){
                 props = JSON.parse(props);
@@ -44,21 +33,21 @@ function capabilitiesjs() {
                 addCriterionItem(prop);
                 return;
             }
-            addCriterionItem('node_type');
-            setDefaultNodeType();
+            addCriterionItem(Object.keys(defaults[resource_type])[0]);
+            setDefaultCapabilityValue();
 
         }
     };
-    xhr.open('GET', '{% url "horizon:project:leases:extra_capabilities" %}', true);
+    xhr.open('GET', resource_type + '/extras.json', true);
     xhr.send();
 
-    var crl = document.querySelector('#criteria-list');
+    var crl = document.querySelector('#criteria-list-' + resource_type);
     crl.innerHTML = '';
 
     function setResourcePropertyValues(index){
         var props = document.getElementById('criteria-payload').getAttribute('form_data');
         if(!props || props == 'None' || props.length == 0){
-            setPropertyType(index, 'compute_haswell');
+            setPropertyType(index, Object.values(defaults[resource_type])[0]);
             return;
         }
         props = JSON.parse(props);
@@ -97,7 +86,7 @@ function capabilitiesjs() {
                 '<option value="ge">&ge;</option>' +
                 '<option value="ne">&ne;</option>' +
             '</select> '+
-            '<select id="resource-node-type" class="form-control cri-val">' +
+            '<select id="resource-{{ widget.resource_type }}" class="form-control cri-val">' +
                 '<option disabled selected></option>' +
             '</select> ' +
             '<button class="btn btn-xs btn-danger cri-rm">X</button>';
@@ -108,7 +97,7 @@ function capabilitiesjs() {
         var name_selector = criterion.querySelector('.cri-name');
         name_selector.id = 'criteria-{{ widget.name }}-id-' + index;
         name_selector.name = 'criteria-{{ widget.name }}-name-' + index;
-        hostCapabilityNames.forEach(function(cn) {
+        capabilityNames.forEach(function(cn) {
             name_selector.appendChild(new Option(cn, cn));
         });
         name_selector.addEventListener('change', changeCriterionName, false);
@@ -148,7 +137,7 @@ function capabilitiesjs() {
     }
 
     function fillCriteriaValues(element, name) {
-        var values = hostCapabilityValues[name];
+        var values = capabilityValues[name];
         values.sort();
         values.forEach(function(cv) {
             element.appendChild(new Option(cv, cv));
@@ -156,25 +145,26 @@ function capabilitiesjs() {
         setResourcePropertyValues(element.id.slice(-1));
     }
 
-    function setDefaultNodeType(){
-        var nodeOptions = $("#criteria-resource_properties-value-0");
+    function setDefaultCapabilityValue(){
+        var options = $("#criteria-resource_properties-value-0");
         try {
-          nodeOptions.find('[value="compute_haswell"]').attr("selected","selected");
+          var resource_type_value = Object.keys(defaults[resource_type])[0]
+          options.find('[value="' + resource_type_value + '"]').attr("selected","selected");
         } catch(err) {
           console.error(err);
         }
     }
 
     function setPropertyType(index, propType){
-        var nodeOptions = $('#criteria-resource_properties-value-' + index);
-          nodeOptions.find('[value="' + propType + '"]').attr("selected","selected");
+        var options = $('#criteria-resource_properties-value-' + index);
+          options.find('[value="' + propType + '"]').attr("selected","selected");
     }
 
-    function setConditionalType(index, nodeCondition){
-        var nodeConditions = $('#criteria-resource_properties-equality-' + index);
+    function setConditionalType(index, resourceCondition){
+        var resourceCondition = $('#criteria-resource_properties-equality-' + index);
         var conditions = {"==":"eq","<":"lt","<=":"le",">":"gt",">=":"ge","!=":"ne"}
         try {
-          nodeConditions.find('[value="' + conditions[nodeCondition] + '"]').attr("selected","selected");
+        	resourceCondition.find('[value="' + conditions[resourceCondition] + '"]').attr("selected","selected");
         } catch(err) {
           console.error(err);
         }
@@ -186,7 +176,7 @@ function capabilitiesjs() {
         displayWarningIfEmpty();
     }
 
-    var addbutton = document.querySelector('#criteria-add');
+    var addbutton = document.querySelector('#criteria-add-' + resource_type);
     addbutton.addEventListener("click", addCriterion, false);
 
     document.querySelectorAll('.cri-adder').forEach(function (elem) {
@@ -194,14 +184,4 @@ function capabilitiesjs() {
             addCriterionItem(elem.dataset.criName);
         });
     });
-}
-
-var cri_div = document.querySelector('#criteria');
-if (cri_div.dataset.loaded_once === undefined) {
-    capabilitiesjs();
-    cri_div.dataset.loaded_once = true;
-    console.log('loaded criteria widget code')
-} else {
-    console.log('blocked reload of widget code :/');
-}
-</script>
+};

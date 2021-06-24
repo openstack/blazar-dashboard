@@ -237,6 +237,15 @@ def network_allocations_list(request):
     return [Allocation(a) for a in allocations]
 
 
+def network_capabilities_list(request):
+    extra_capabilities = blazarclient(
+        request).network.list_capabilities(detail=True)
+    extra_capabilities.append({'property': 'physical_network',
+                               'private': False,
+                               'capability_values': ['physnet1', 'vlan']})
+    return [ExtraCapability(e) for e in extra_capabilities]
+
+
 def device_list(request):
     """List devices."""
     devices = blazarclient(request).device.list()
@@ -247,6 +256,12 @@ def device_allocations_list(request):
     """List allocations for all devices."""
     allocations = blazarclient(request).device.list_allocations()
     return [Allocation(a) for a in allocations]
+
+
+def device_capabilities_list(request):
+    extra_capabilities = blazarclient(
+        request).device.list_capabilities(detail=True)
+    return [ExtraCapability(e) for e in extra_capabilities]
 
 
 def compute_host_available(request, start_date, end_date):
@@ -273,6 +288,32 @@ def compute_host_available(request, start_date, end_date):
             not h.reservations)]
 
     return len(available_hosts)
+
+
+def device_available(request, start_date, end_date):
+    """
+    Return the number of devices available for reservation for the entire
+    specified date range.
+    """
+    def check_device_unavailable(reservation):
+        lease_start = _parse_api_datestr(reservation['start_date'])
+        lease_end = _parse_api_datestr(reservation['end_date'])
+
+        if (lease_start > start_date and lease_start < end_date):
+            return True
+        elif (lease_end > start_date and lease_end < end_date):
+            return True
+        elif (lease_start < start_date and lease_end > end_date):
+            return True
+        else:
+            return False
+
+    available_devices = [
+        d for d in device_allocations_list(request)
+        if (not any([check_device_unavailable(r) for r in d.reservations]) or
+            not d.reservations)]
+
+    return len(available_devices)
 
 
 def compute_host_display_name(host):
@@ -407,6 +448,18 @@ def computehost_extra_capabilities(request):
     return {
         x.property: x.capability_values for x
         in host_capabilities_list(request)}
+
+
+def network_extra_capabilities(request):
+    return {
+        x.property: x.capability_values for x
+        in network_capabilities_list(request)}
+
+
+def device_extra_capabilities(request):
+    return {
+        x.property: x.capability_values for x
+        in device_capabilities_list(request)}
 
 
 def get_floatingip_network_id(request, network_name_regex):
