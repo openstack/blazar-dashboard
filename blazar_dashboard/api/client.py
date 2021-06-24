@@ -375,7 +375,7 @@ def device_reservation_calendar(request):
 
     def device2dict(d):
         return dict(
-            name=d.name, device_type=d.device_type,
+            device_name=d.name, device_type=d.device_type,
             device_driver=d.device_driver)
 
     devices_by_id = {d.id: d for d in device_list(request)}
