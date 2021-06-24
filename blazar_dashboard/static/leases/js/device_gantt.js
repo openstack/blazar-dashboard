@@ -40,7 +40,7 @@
         return {
           'startDate': new Date(reservation.start_date),
           'endDate': new Date(reservation.end_date),
-          'taskName': reservation.name,
+          'taskName': reservation.device_name,
           'status': reservation.status,
           'data': reservation
         }
@@ -49,7 +49,7 @@
       devices = resp.devices;
 
       var taskNames = $.map(resp.devices, function(device, i) {
-        return device.name;
+        return device.device_name;
       });
 
       $('#blazar-gantt-device').empty().height(20 * taskNames.length);
@@ -109,7 +109,7 @@
       var timeDomain = getTimeDomain();
 
       var filteredTaskNames = devices
-        .map(function (device) {return device.name});
+        .map(function (device) {return device.device_name});
 
       tasks = all_tasks.filter(function(task) {
         return filteredTaskNames.indexOf(task.taskName) >= 0
