@@ -282,7 +282,7 @@ def compute_host_display_name(host):
 def nodes_in_lease(request, lease):
     """Return list of hypervisor_hostnames in a lease."""
     if not any(
-        r['resource_type'] == 'physical:host' for r in lease['reservations']):
+            r['resource_type'] == 'physical:host' for r in lease['reservations']):
         return []
 
     hypervisor_by_host_id = {
@@ -388,7 +388,7 @@ def device_reservation_calendar(request):
             end_date=_parse_api_datestr(reservation['end_date']),
             id=reservation['id'],
             status=reservation.get('status'),
-            device_id=devices_by_id[resource_id].id)
+            device_name=devices_by_id[resource_id].name)
 
         return {k: v for k, v in device_reservation.items() if v is not None}
 
