@@ -47,6 +47,21 @@
       });
       tasks = all_tasks;
       devices = resp.devices;
+      
+      // populate vendor-chooser
+      var availableVendors = {};
+      devices.forEach(function(device) {
+          availableVendors[device.vendor] = true;
+      });
+      var chooser = $("#vendor-chooser");
+      chooser.empty();
+      chooser.append(new Option('All Vendors', '*'));
+      Object.keys(availableVendors).forEach(function (key) {
+        if (availableVendors[key]) {
+          chooser.append(new Option(key, key));
+        }
+      });
+      chooser.prop('disabled', false);
 
       var taskNames = $.map(resp.devices, function(device, i) {
         return device.device_name;
@@ -105,10 +120,12 @@
       dateFormat: 'mm/dd/yyyy'
     });
 
-    $('#node-type-chooser').change(function() {
+    $('#vendor-chooser').change(function() {
       var timeDomain = getTimeDomain();
+      var vendor = $('#vendor-chooser').val();
 
       var filteredTaskNames = devices
+        .filter(function (device) {return vendor === '*' || vendor === device.vendor})
         .map(function (device) {return device.device_name});
 
       tasks = all_tasks.filter(function(task) {
