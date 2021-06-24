@@ -35,7 +35,7 @@
             return r.id === this.id;
           },
           reservation
-        ).map(function(d) { return d.name; });
+        ).map(function(d) { return d.device_name; });
 
         return {
           'startDate': new Date(reservation.start_date),
