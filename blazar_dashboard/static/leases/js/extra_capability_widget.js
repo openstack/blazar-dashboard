@@ -18,7 +18,7 @@ function capabilitiesjs(resource_type) {
             capabilityValues = JSON.parse(this.responseText)['extra_capabilities'];
             capabilityNames = Object.keys(capabilityValues);
             capabilityNames.sort();
-            var props = document.getElementById('criteria-payload').getAttribute('form_data');
+            var props = document.getElementById('criteria-payload-' + resource_type).getAttribute('form_data');
             if(props && props != 'None'){
                 props = JSON.parse(props);
                 if (props[0] == 'and'){
@@ -45,7 +45,7 @@ function capabilitiesjs(resource_type) {
     crl.innerHTML = '';
 
     function setResourcePropertyValues(index){
-        var props = document.getElementById('criteria-payload').getAttribute('form_data');
+        var props = document.getElementById('criteria-payload-' + resource_type).getAttribute('form_data');
         if(!props || props == 'None' || props.length == 0){
             setPropertyType(index, Object.values(defaults[resource_type])[0]);
             return;
@@ -148,7 +148,7 @@ function capabilitiesjs(resource_type) {
     function setDefaultCapabilityValue(){
         var options = $("#criteria-resource_properties-value-0");
         try {
-          var resource_type_value = Object.keys(defaults[resource_type])[0]
+          var resource_type_value = Object.values(defaults[resource_type])[0]
           options.find('[value="' + resource_type_value + '"]').attr("selected","selected");
         } catch(err) {
           console.error(err);
