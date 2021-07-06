@@ -1,10 +1,10 @@
-import collections
 import datetime
-import json
 
+import collections
 from django.forms.widgets import Widget
 from django.template import loader
 from django.utils.safestring import mark_safe
+import json
 
 
 EQUALITIES = {
@@ -16,8 +16,13 @@ EQUALITIES = {
     'ne': '!=',
 }
 
+
 class CapabilityWidget(Widget):
-    template_name = 'project/leases/_widget_capabilities.html'
+    template_name = 'project/leases/_widget_{resource_type}_capabilities.html'
+
+    def __init__(self, *args, **kwargs):
+        self.resource_type = kwargs.pop('resource_type')
+        super(CapabilityWidget, self).__init__(*args, **kwargs)
 
     def get_context(self, name, value, attrs=None):
         return {'widget': {
@@ -27,7 +32,8 @@ class CapabilityWidget(Widget):
 
     def render(self, name, value, attrs=None):
         context = self.get_context(name, value, attrs)
-        template = loader.get_template(self.template_name).render(context)
+        template = loader.get_template(self.template_name.format(
+            resource_type=self.resource_type)).render(context)
         return mark_safe(template)
 
     def value_from_datadict(self, data, files, name):
@@ -60,11 +66,13 @@ class CapabilityWidget(Widget):
         if len(formatted_criteria) < 1:
             resource_properties = ''
         elif len(formatted_criteria) == 1:
-            resource_properties = json.dumps(formatted_criteria[0], separators=(',', ':'))
+            resource_properties = json.dumps(
+                formatted_criteria[0], separators=(',', ':'))
         elif len(formatted_criteria) > 1:
             resource_properties = ['and']
             resource_properties.extend(formatted_criteria)
-            resource_properties = json.dumps(resource_properties, separators=(',', ':'))
+            resource_properties = json.dumps(
+                resource_properties, separators=(',', ':'))
 
         return resource_properties
 
@@ -96,7 +104,7 @@ class TimespanWidget(Widget):
                 parts[part] = data['timespan-{}-{}'.format(name, part)]
             except LookupError:
                 parts[part] = 0
-                continue # missing assume 0
+                continue  # missing assume 0
 
             if not parts[part]:
                 # might be empty string

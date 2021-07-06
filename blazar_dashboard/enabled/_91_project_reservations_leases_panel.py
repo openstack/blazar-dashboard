@@ -32,4 +32,5 @@ ADD_JS_FILES = [
     'leases/js/lease_gantt.js',
     'leases/js/network_gantt.js',
     'leases/js/device_gantt.js',
+    'leases/js/extra_capability_widget.js'
 ]

@@ -1,0 +1,29 @@
+{% load form_helpers %}
+{% load i18n horizon %}
+
+{% block help_message %}
+<div class="row-fluid">
+  <fieldset>
+    <input id="cookie_offset" type="hidden" value="{{ offset }}" />
+    <div class="alert alert-warning" id="timezone">
+      <p>
+        {% blocktrans %}
+        Your timezone is currently configured as <b>{{ timezone }}</b>. If you need to update your
+        timezone please go to your
+        {% endblocktrans%}
+        <a href="{% url 'horizon:settings:user:index' %}">User Settings</a>.
+      </p>
+    </div>
+
+  </fieldset>
+</div>
+<div class="alert alert-warning">
+  Please be courteous to other users of the testbed and make sure your lease represents a responsible
+  use of Chameleon resources and complies with our
+  <a href="https://chameleoncloud.readthedocs.io/en/latest/getting-started/faq.html#what-are-the-best-practices-for-chameleon-usage"
+    target="blank">
+    best practices</a>.
+  Chameleon operators reserve the right to terminate leases judged to be abusive.
+</div>
+<div class="alert alert-info">For leases shorter than 24 hours, use a lease length of zero days.</div>
+{% endblock %}

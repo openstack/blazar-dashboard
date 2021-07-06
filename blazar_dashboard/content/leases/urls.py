@@ -16,6 +16,7 @@
 from blazar_dashboard.content.leases import views as leases_views
 from django.conf.urls import url
 
+LEASE_URL = r'^(?P<lease_id>[^/]+)/%s$'
 
 urlpatterns = [
     url(r'^calendar/$', leases_views.CalendarView.as_view(), name='calendar'),
@@ -32,13 +33,14 @@ urlpatterns = [
     url(r'^device_calendar\.json$', leases_views.device_calendar_data_view,
         name='device_calendar_data'),
 
-    url(r'^extras\.json$', leases_views.extra_capabilities,
+    url(r'^(?P<resource_type>[^/]+)/extras\.json$',
+        leases_views.extra_capabilities,
         name='extra_capabilities'),
 
     url(r'^$', leases_views.IndexView.as_view(), name='index'),
     url(r'^create/$', leases_views.CreateView.as_view(), name='create'),
-    url(r'^(?P<lease_id>[^/]+)/$', leases_views.DetailView.as_view(),
+    url(LEASE_URL % '', leases_views.DetailView.as_view(),
         name='detail'),
-    url(r'^(?P<lease_id>[^/]+)/update$', leases_views.UpdateView.as_view(),
+    url(LEASE_URL % 'update', leases_views.UpdateView.as_view(),
         name='update'),
 ]
