@@ -62,8 +62,8 @@ function capabilitiesjs(resource_type) {
     }
 
     function displayWarningIfEmpty() {
-        var criteria = document.querySelectorAll('.criterion');
-        document.querySelector('#no-criteria-warning').hidden = criteria.length !== 0;
+        var criteria = document.querySelectorAll('.criterion-' + resource_type);
+        document.querySelector('#no-criteria-warning-' + resource_type).hidden = criteria.length !== 0;
     }
 
     function addCriterion(event) {
@@ -73,7 +73,7 @@ function capabilitiesjs(resource_type) {
     function addCriterionItem(prefilled_name) {
         var criterion = document.createElement('li');
         criterion.style = "list-style-type:none;"
-        criterion.className = 'criterion';
+        criterion.className = 'criterion-' + resource_type;
         criterion.innerHTML =
             '<select class="form-control cri-name">' +
                 '<option disabled selected></option>' + // blank...select something else.
@@ -95,20 +95,20 @@ function capabilitiesjs(resource_type) {
         criteriaCounter = criteriaCounter + 1;
 
         var name_selector = criterion.querySelector('.cri-name');
-        name_selector.id = 'criteria-{{ widget.name }}-id-' + index;
-        name_selector.name = 'criteria-{{ widget.name }}-name-' + index;
+        name_selector.id = 'criteria-' + resource_type + '-id-' + index;
+        name_selector.name = 'criteria-' + resource_type + '-name-' + index;
         capabilityNames.forEach(function(cn) {
             name_selector.appendChild(new Option(cn, cn));
         });
         name_selector.addEventListener('change', changeCriterionName, false);
 
         var equality_selector = criterion.querySelector('.cri-equality');
-        equality_selector.name = 'criteria-{{ widget.name }}-equality-' + index;
-        equality_selector.id = 'criteria-{{ widget.name }}-equality-' + index;
+        equality_selector.name = 'criteria-' + resource_type + '-equality-' + index;
+        equality_selector.id = 'criteria-' + resource_type + '-equality-' + index;
 
         var value_selector = criterion.querySelector('.cri-val');
-        value_selector.id = 'criteria-resource_properties-value-' + index;
-        value_selector.name = 'criteria-{{ widget.name }}-value-' + index;
+        value_selector.id = 'criteria-' + resource_type + '-value-' + index;
+        value_selector.name = 'criteria-' + resource_type + '-value-' + index;
 
         var remove_button = criterion.querySelector('.cri-rm');
         remove_button.addEventListener('click', removeCriterion, false);
@@ -120,7 +120,7 @@ function capabilitiesjs(resource_type) {
             name_selector.dispatchEvent(event);
         }
 
-        document.querySelector('#no-criteria-warning').hidden = true;
+        document.querySelector('#no-criteria-warning-' + resource_type).hidden = true;
         crl.appendChild(criterion);
         var hr = document.createElement('hr');
         hr.style = "margin-top:5px;margin-bottom:5px;"
@@ -146,7 +146,7 @@ function capabilitiesjs(resource_type) {
     }
 
     function setDefaultCapabilityValue(){
-        var options = $("#criteria-resource_properties-value-0");
+        var options = $("#criteria-" + resource_type + "-value-0");
         try {
           var resource_type_value = Object.values(defaults[resource_type])[0]
           options.find('[value="' + resource_type_value + '"]').attr("selected","selected");
@@ -156,12 +156,12 @@ function capabilitiesjs(resource_type) {
     }
 
     function setPropertyType(index, propType){
-        var options = $('#criteria-resource_properties-value-' + index);
+        var options = $('#criteria-' + resource_type + '-value-' + index);
           options.find('[value="' + propType + '"]').attr("selected","selected");
     }
 
     function setConditionalType(index, resourceCondition){
-        var resourceCondition = $('#criteria-resource_properties-equality-' + index);
+        var resourceCondition = $('#criteria-' + resource_type + '-equality-' + index);
         var conditions = {"==":"eq","<":"lt","<=":"le",">":"gt",">=":"ge","!=":"ne"}
         try {
         	resourceCondition.find('[value="' + conditions[resourceCondition] + '"]').attr("selected","selected");
@@ -179,7 +179,7 @@ function capabilitiesjs(resource_type) {
     var addbutton = document.querySelector('#criteria-add-' + resource_type);
     addbutton.addEventListener("click", addCriterion, false);
 
-    document.querySelectorAll('.cri-adder').forEach(function (elem) {
+    document.querySelector('#no-criteria-warning-' + resource_type).querySelectorAll('.cri-adder').forEach(function (elem) {
         elem.addEventListener("click", function (event) {
             addCriterionItem(elem.dataset.criName);
         });
