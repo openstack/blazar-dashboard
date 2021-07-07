@@ -343,7 +343,7 @@ class SetDevicesAction(workflows.Action):
 
 class SetDevices(workflows.Step):
     action_class = SetDevicesAction
-    contributes = ("min_devices", "max_devices", "resource_properties")
+    contributes = ("min_devices", "max_devices", "device_resource_properties")
 
     def allowed(self, request):
         return conf.device_reservation.get("enabled", False)

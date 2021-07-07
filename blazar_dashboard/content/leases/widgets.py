@@ -37,7 +37,7 @@ class CapabilityWidget(Widget):
         return mark_safe(template)
 
     def value_from_datadict(self, data, files, name):
-        prefix = 'criteria-{}-'.format(name)
+        prefix = 'criteria-{}-'.format(self.resource_type)
         criteria_keys = (k for k in data if k.startswith(prefix))
 
         criteria = collections.defaultdict(dict)
@@ -47,7 +47,6 @@ class CapabilityWidget(Widget):
             criteria[n][arg] = data[key]
         criteria.default_factory = None
 
-        print(criteria)
         formatted_criteria = []
         for criterion in criteria.values():
             # (silently) filter incompletes
