@@ -23,7 +23,9 @@ class SetGeneralAction(workflows.Action):
     name = forms.CharField(
         label=_("Lease Name"),
         max_length=80,
-        required=True
+        required=True,
+        error_messages={
+            'required': _("Lease name is required!")},
     )
 
     start_date = forms.DateTimeField(
@@ -91,8 +93,8 @@ class SetGeneralAction(workflows.Action):
 
     class Meta(object):
         name = _("General")
-        help_text_template = ("project/leases/"
-                              "_lease_create_general_help.html")
+        help_text_template = ("project/leases/create_lease/"
+                              "_general_help.html")
 
     def __init__(self, request, context, *args, **kwargs):
         self.request = request
@@ -120,6 +122,11 @@ class SetGeneralAction(workflows.Action):
     def clean(self):
 
         cleaned_data = super(SetGeneralAction, self).clean()
+
+        if not cleaned_data.get('name'):
+            raise forms.ValidationError(
+                "Lease name is required!")
+
         localtz = pytz.timezone(self.request.session.get(
             'django_timezone',
             self.request.COOKIES.get('django_timezone', 'UTC')))
@@ -186,66 +193,114 @@ class SetGeneralAction(workflows.Action):
 
 class SetGeneral(workflows.Step):
     action_class = SetGeneralAction
-    template_name = 'project/leases/_create_lease_general_step.html'
+    template_name = 'project/leases/create_lease/_general_step.html'
     contributes = ("name", "start_date", "start_time",
-                   "number_of_days", "end_date", "end_time")
+                   "number_of_days", "end_date", "end_time",
+                   "with_host", "with_network", "with_device")
 
 
 class SetHostsAction(workflows.Action):
+    with_computehost = forms.BooleanField(label=_("Reserve Hosts"),
+                                          initial=False,
+                                          required=False,
+                                          )
     min_hosts = forms.IntegerField(
         label=_('Minimum Number of Hosts'),
         required=False,
         help_text=_('Enter the minimum number of hosts to reserve.'),
         min_value=0,
-        initial=0,
+        initial=1,
         widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Minimum Number of Hosts')})
+            'class': 'create-lease-switch-on-computehost'
+        })
     )
     max_hosts = forms.IntegerField(
         label=_('Maximum Number of Hosts'),
         required=False,
         help_text=_('Enter the maximum number of hosts to reserve.'),
         min_value=0,
-        initial=0,
+        initial=1,
         widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Maximum Number of Hosts')})
+            'class': 'create-lease-switch-on-computehost'
+        })
     )
     computehost_resource_properties = forms.CharField(
         label=_("Resource Properties"),
         required=False,
         help_text=_('Choose properties of the resource(s) to reserve.'),
         max_length=1024,
-        widget=widgets.CapabilityWidget(resource_type='computehost')
+        widget=widgets.CapabilityWidget(
+            switchable_class='create-lease-switch-on-computehost',
+            resource_type='computehost')
     )
 
     class Meta(object):
         name = _("Hosts")
-        help_text_template = ("project/leases/"
-                              "_lease_create_computehost_help.html")
+        help_text_template = ("project/leases/create_lease/"
+                              "_host_help.html")
+
+    def _remove_fields_errors(self):
+        self._errors = {}
+
+    def clean(self):
+        with_host = self.initial.get('with_host')
+        if not with_host:
+            self._remove_fields_errors()
+            return None
+        start_date = self.initial.get('start_date')
+        end_date = self.initial.get('end_date')
+        cleaned_data = super(SetHostsAction, self).clean()
+        if (cleaned_data['min_hosts'] == 0 or cleaned_data['max_hosts'] == 0):
+            raise forms.ValidationError(
+                "No host is reserved! "
+                "Clear \"Reserve Hosts\" checkbox "
+                "in previous step if you don't need "
+                "host resources.")
+
+        if (cleaned_data['min_hosts'] > cleaned_data['max_hosts']):
+            raise forms.ValidationError(
+                "Max hosts is less than min hosts!")
+
+        num_hosts = api.client.compute_host_available(
+            self.request,
+            start_date,
+            end_date)
+        if (cleaned_data['min_hosts'] > num_hosts):
+            raise forms.ValidationError(_(
+                "Not enough hosts are available for this reservation "
+                "(minimum %s requested; %s available). Try adjusting "
+                "the number of hosts requested or the date range "
+                "for the reservation.")
+                % (cleaned_data['min_hosts'], num_hosts))
+
+        return cleaned_data
 
 
 class SetHosts(workflows.Step):
     action_class = SetHostsAction
-    contributes = ("min_hosts", "max_hosts", "computehost_resource_properties")
+    template_name = 'project/leases/create_lease/_host_step.html'
+    contributes = ("with_host", "min_hosts", "max_hosts",
+                   "computehost_resource_properties")
 
     def allowed(self, request):
         return conf.host_reservation.get("enabled", False)
 
 
 class SetNetworksAction(workflows.Action):
-    if conf.network_reservation.get('enabled'):
+    if conf.network_reservation.get('enabled', False):
+        with_network = forms.BooleanField(label=_("Reserve Network"),
+                                          initial=False,
+                                          required=False,
+                                          )
         network_name = forms.CharField(
             label=_('Network Name'),
             required=False,
             help_text=_('Name to use when creating the Neutron network.'),
+            error_messages={
+                'required': _('Please specify "Network Name"')},
             widget=forms.TextInput(attrs={
-                'class': 'switched',
-                'data-switch-on': 'source',
-                'data-source-network': _('Network Name')})
+                'class': 'create-lease-switch-on-network'
+            })
         )
         network_description = forms.CharField(
             label=_('Network Description'),
@@ -253,18 +308,23 @@ class SetNetworksAction(workflows.Action):
             help_text=_(
                 'Description to use when creating the Neutron network.'),
             widget=forms.TextInput(attrs={
-                'class': 'switched',
-                'data-switch-on': 'source',
-                'data-source-network': _('Network Description')})
+                'class': 'create-lease-switch-on-network'
+            })
         )
         network_resource_properties = forms.CharField(
             label=_("Resource Properties"),
             required=False,
             help_text=_('Choose properties of the resource(s) to reserve.'),
             max_length=1024,
-            widget=widgets.CapabilityWidget(resource_type='network')
+            widget=widgets.CapabilityWidget(
+                switchable_class='create-lease-switch-on-network',
+                resource_type='network')
         )
-    if conf.floatingip_reservation.get('enabled'):
+    if conf.floatingip_reservation.get('enabled', False):
+        with_floatingip = forms.BooleanField(label=_("Reserve Floating IPs"),
+                                             initial=False,
+                                             required=False,
+                                             )
         network_ip_count = forms.IntegerField(
             label=_('Number of Floating IP Addresses Needed'),
             required=False,
@@ -273,13 +333,15 @@ class SetNetworksAction(workflows.Action):
                 'you would like to reserve.'),
             min_value=0,
             initial=0,
-            widget=forms.NumberInput()
+            widget=forms.NumberInput(attrs={
+                'class': 'create-lease-switch-on-floatingip'
+            })
         )
 
     class Meta(object):
         name = _("Networks")
-        help_text_template = ("project/leases/"
-                              "_lease_create_network_help.html")
+        help_text_template = ("project/leases/create_lease/"
+                              "_network_help.html")
 
     def __init__(self, request, context, *args, **kwargs):
         self.request = request
@@ -295,55 +357,119 @@ class SetNetworksAction(workflows.Action):
 
         return super().get_help_text(extra)
 
+    def _remove_fields_errors(self):
+        self._errors = {}
+
+    def clean(self):
+        with_network = self.initial.get('with_network')
+        if not with_network:
+            self._remove_fields_errors()
+            return None
+
+        cleaned_data = super(SetNetworksAction, self).clean()
+        if (not cleaned_data.get('network_name') and
+                cleaned_data.get('network_ip_count', 0) == 0):
+            raise forms.ValidationError(
+                "No network resource is reserved! "
+                "Clear \"Reserve Networks\" checkbox "
+                "in previous step if you don't need "
+                "network resources.")
+
+        return cleaned_data
+
 
 class SetNetworks(workflows.Step):
     action_class = SetNetworksAction
-    contributes = ("network_name", "network_description",
-                   "network_ip_count", "network_resource_properties")
+    template_name = 'project/leases/create_lease/_network_step.html'
+    contributes = ("with_network", "network_name", "network_description",
+                   "with_floatingip", "network_ip_count", "network_resource_properties")
 
     def allowed(self, request):
-        return conf.network_reservation.get("enabled", False) or \
-            conf.floatingip_reservation.get("enabled", False)
+        return (conf.network_reservation.get("enabled", False) or
+                conf.floatingip_reservation.get("enabled", False))
 
 
 class SetDevicesAction(workflows.Action):
+    with_device = forms.BooleanField(label=_("Reserve Devices"),
+                                     initial=False,
+                                     required=False,
+                                     )
     min_devices = forms.IntegerField(
         label=_('Minimum Number of Devices'),
         required=False,
         help_text=_('Enter the minimum number of devices to reserve.'),
         min_value=0,
-        initial=0,
+        initial=1,
         widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Minimum Number of Devices')})
+            'class': 'create-lease-switch-on-device'
+        })
     )
     max_devices = forms.IntegerField(
         label=_('Maximum Number of Devices'),
         required=False,
         help_text=_('Enter the maximum number of devices to reserve.'),
         min_value=0,
-        initial=0,
+        initial=1,
         widget=forms.NumberInput(attrs={
-            'class': 'switched',
-            'data-switch-on': 'source',
-            'data-source-host': _('Maximum Number of Devices')})
+            'class': 'create-lease-switch-on-device'
+        })
     )
     device_resource_properties = forms.CharField(
         label=_("Resource Properties"),
         required=False,
         help_text=_('Choose properties of the resource(s) to reserve.'),
         max_length=1024,
-        widget=widgets.CapabilityWidget(resource_type='device')
+        widget=widgets.CapabilityWidget(
+            switchable_class='create-lease-switch-on-device',
+            resource_type='device')
     )
 
     class Meta(object):
         name = _("Devices")
 
+    def _remove_fields_errors(self):
+        self._errors = {}
+
+    def clean(self):
+        with_device = self.initial.get('with_device')
+        if not with_device:
+            self._remove_fields_errors()
+            return None
+        start_date = self.initial.get('start_date')
+        end_date = self.initial.get('end_date')
+
+        cleaned_data = super(SetDevicesAction, self).clean()
+        if (cleaned_data['min_devices'] == 0 or cleaned_data['max_devices'] == 0):
+            raise forms.ValidationError(
+                "No device is reserved! "
+                "Clear \"Reserve Devices\" checkbox "
+                "in previous step if you don't need "
+                "device resources.")
+
+        if (cleaned_data['min_devices'] > cleaned_data['max_devices']):
+            raise forms.ValidationError(
+                "Max devices is less than min devices!")
+
+        num_devices = api.client.device_available(
+            self.request,
+            start_date,
+            end_date)
+        if (cleaned_data['min_devices'] > num_devices):
+            raise forms.ValidationError(_(
+                "Not enough devices are available for this reservation "
+                "(minimum %s requested; %s available). Try adjusting "
+                "the number of hosts requested or the date range "
+                "for the reservation.")
+                % (cleaned_data['min_devices'], num_devices))
+
+        return cleaned_data
+
 
 class SetDevices(workflows.Step):
     action_class = SetDevicesAction
-    contributes = ("min_devices", "max_devices", "device_resource_properties")
+    template_name = 'project/leases/create_lease/_device_step.html'
+    contributes = ("with_device", "min_devices",
+                   "max_devices", "device_resource_properties")
 
     def allowed(self, request):
         return conf.device_reservation.get("enabled", False)
@@ -357,16 +483,25 @@ class CreateLease(workflows.Workflow):
                         'has been submitted.')
     failure_message = _('Unable to create the lease named "%s".')
     success_url = reverse_lazy('horizon:project:leases:index')
-    multipart = True
+    wizard = True
     default_steps = [SetGeneral, SetHosts,
                      SetNetworks, SetDevices]
 
     def format_status_message(self, message):
         return message % self.context.get('name')
 
+    def is_valid(self):
+        if (not self.context.get('with_host', False) and
+            not self.context.get('with_network', False) and
+            not self.context.get('with_floatingip', False) and
+                not self.context.get('with_device', False)):
+            return False
+        return super(CreateLease, self).is_valid()
+
     def handle(self, request, data):
         reservations = []
-        if (conf.host_reservation.get('enabled') and
+        if (data.get('with_host', False) and
+            conf.host_reservation.get('enabled', False) and
                 data['min_hosts'] > 0 and data['max_hosts'] > 0):
             res_props = data.get('computehost_resource_properties', '')
             reservations.append(
@@ -377,7 +512,8 @@ class CreateLease(workflows.Workflow):
                     'hypervisor_properties': '',
                     'resource_properties': res_props,
                 })
-        if (conf.floatingip_reservation.get('enabled') and
+        if (data.get('with_network', False) and
+            conf.floatingip_reservation.get('enabled', False) and
                 data['network_ip_count'] > 0):
             network_id = api.client.get_floatingip_network_id(
                 request, conf.floatingip_reservation.get('network_name_regex'))
@@ -388,7 +524,9 @@ class CreateLease(workflows.Workflow):
                     'amount': data['network_ip_count'],
                 }
             )
-        if conf.network_reservation.get('enabled') and data['network_name']:
+        if (data.get('with_network', False) and
+            conf.network_reservation.get('enabled', False) and
+                data['network_name']):
             res_props = data.get('network_resource_properties', '')
             reservations.append(
                 {
@@ -398,7 +536,8 @@ class CreateLease(workflows.Workflow):
                     'network_properties': '',
                     'resource_properties': res_props,
                 })
-        if (conf.device_reservation.get('enabled') and
+        if (data.get('with_device', False) and
+            conf.device_reservation.get('enabled', False) and
                 data['min_devices'] > 0 and data['max_devices'] > 0):
             res_props = data.get('device_resource_properties', '')
             reservations.append(
@@ -427,46 +566,188 @@ class CreateLease(workflows.Workflow):
                               message='An error occurred while creating this '
                                       'lease: %s. Please try again.' % e)
 
+
+class UpdateGeneralAction(workflows.Action):
+
+    lease_name = forms.CharField(
+        label=_('Lease name'), widget=forms.TextInput(), required=False)
+
+    prolong_for = forms.CharField(
+        label=_('Prolong for'),
+        widget=widgets.TimespanWidget(),
+        required=False)
+
+    reduce_by = forms.CharField(
+        label=_('Reduce by'),
+        widget=widgets.TimespanWidget(),
+        required=False)
+
+    reservations = forms.CharField(
+        label=_("Reservation values to update"),
+        help_text=_('Enter reservation values to update as JSON'),
+        widget=forms.Textarea(
+            attrs={'rows': 8,
+                   'placeholder':
+                   'e.g.\n'
+                   '[\n'
+                   '    {\n'
+                   '        "id": "087bc740-6d2d-410b-9d47-c7b2b55a9d36",\n'
+                   '        "max": 3\n'
+                   '    }\n'
+                   ']'}),
+        max_length=511,
+        required=False)
+
+    class Meta(object):
+        name = _('General')
+
+
+class UpdateGeneral(workflows.Step):
+    action_class = UpdateGeneralAction
+    contributes = ("lease_name", "prolong_for", "reduce_by",
+                   "reservations")
+
+
+class UpdateHostsAction(workflows.Action):
+    min_hosts = forms.IntegerField(
+        label=_('Minimum Number of Hosts'),
+        required=False,
+        help_text=_('Enter the updated minimum number of hosts to reserve.'),
+        min_value=1
+    )
+    max_hosts = forms.IntegerField(
+        label=_('Maximum Number of Hosts'),
+        required=False,
+        help_text=_('Enter the updated maximum number of hosts to reserve.'),
+        min_value=1
+    )
+
+    class Meta(object):
+        name = _('Hosts')
+        help_text = _("For advance reservations that haven’t yet started, "
+                      "the node count can be increased or decreased. "
+                      "For reservations already started, "
+                      "only new nodes can be added.")
+
     def clean(self):
-        cleaned_data = super(CreateLease, self).clean()
-        if conf.host_reservation.get('enabled'):
-            num_hosts = api.client.compute_host_available(
-                self.request,
-                cleaned_data['start_date'],
-                cleaned_data['end_date'])
-            if (cleaned_data['min_hosts'] > num_hosts):
-                raise forms.ValidationError(_(
-                    "Not enough hosts are available for this reservation "
-                    "(minimum %s requested; %s available). Try adjusting "
-                    "the number of hosts requested or the date range "
-                    "for the reservation.")
-                    % (cleaned_data['min_hosts'], num_hosts))
-        if conf.device_reservation.get('enabled'):
-            num_devices = api.client.device_available(
-                self.request,
-                cleaned_data['start_date'],
-                cleaned_data['end_date'])
-            if (cleaned_data['min_devices'] > num_devices):
-                raise forms.ValidationError(_(
-                    "Not enough devices are available for this reservation "
-                    "(minimum %s requested; %s available). Try adjusting "
-                    "the number of devices requested or the date range "
-                    "for the reservation.")
-                    % (cleaned_data['min_devices'], num_hosts))
+        cleaned_data = super(UpdateHostsAction, self).clean()
+        min_hosts = cleaned_data.get("min_hosts")
+        max_hosts = cleaned_data.get("max_hosts")
 
-        reserved_resource = False
-        if (conf.host_reservation.get('enabled') and
-                cleaned_data['min_hosts'] > 0):
-            reserved_resource = True
-        if (conf.network_reservation.get('enabled') and
-                cleaned_data['network_name']):
-            reserved_resource = True
-        if (conf.floatingip_reservation.get('enabled') and
-                cleaned_data['network_ip_count'] > 0):
-            reserved_resource = True
-        if (conf.device_reservation.get('enabled') and
-                cleaned_data['min_device'] > 0):
-            reserved_resource = True
+        if (min_hosts or max_hosts) and not (min_hosts and max_hosts):
+            raise forms.ValidationError("You must provide both min_hosts and "
+                                        "max_hosts.")
 
-        if not reserved_resource:
-            raise forms.ValidationError("No resource to reserve.")
+        return cleaned_data
+
+
+class UpdateHosts(workflows.Step):
+    action_class = UpdateHostsAction
+    contributes = ("min_hosts", "max_hosts")
+
+    def allowed(self, request):
+        return conf.host_reservation.get("enabled", False)
+
+
+class UpdateLease(workflows.Workflow):
+    slug = "update_lease"
+    name = _("Update Lease")
+    finalize_button_name = _("Update")
+    success_message = _('Request for updating a lease named "%s" '
+                        'has been submitted.')
+    failure_message = _('Unable to update the lease named "%s".')
+    success_url = reverse_lazy('horizon:project:leases:index')
+    wizard = True
+    default_steps = [UpdateGeneral]
+
+    def __init__(self, request=None, context_seed=None,
+                 entry_point=None, *args, **kwargs):
+        resource_types = []
+        for reservation in context_seed['lease'].reservations:
+            resource_types.append(reservation['resource_type'])
+
+        self.lease_id = context_seed['lease'].id
+
+        self.is_hostreservation_included = False
+        if 'physical:host' in resource_types:
+            self.is_hostreservation_included = True
+            self.register(UpdateHosts)
+
+        super(UpdateLease, self).__init__(
+            request, context_seed, entry_point, *args, **kwargs)
+
+    def format_status_message(self, message):
+        return message % self.context.get('lease_name')
+
+    def handle(self, request, data):
+        lease_id = self.lease_id
+        is_update = False
+
+        fields = {}
+
+        lease_name = data.get('lease_name', None)
+        if lease_name:
+            fields['name'] = lease_name
+            is_update = True
+
+        try:
+            prolong = float((data.get('prolong_for') or '0s').rstrip('s'))
+            reduce = float((data.get('reduce_by') or '0s').rstrip('s'))
+        except ValueError as e:
+            LOG.error('Error updating lease: %s', e)
+            exceptions.handle(request, message="Invalid value provided.")
+            return
+
+        net_mins = round((prolong - reduce) / 60.0)
+        min_string = '{:.0f}m'.format(abs(net_mins))
+        if net_mins > 0:
+            fields['prolong_for'] = min_string
+            is_update = True
+        elif net_mins < 0:
+            fields['reduce_by'] = min_string
+            is_update = True
+
+        if conf.host_reservation.get("enabled", False) and \
+                self.is_hostreservation_included:
+            min_hosts = data.get('min_hosts')
+            max_hosts = data.get('max_hosts')
+            if min_hosts and max_hosts:
+                if (min_hosts or max_hosts) and not (min_hosts and max_hosts):
+                    raise forms.ValidationError("You must provide both "
+                                                "min_hosts and max_hosts.")
+                try:
+                    min_hosts = int(data.get('min_hosts'))
+                    max_hosts = int(data.get('max_hosts'))
+                except ValueError as e:
+                    LOG.error('Error updating lease: %s', e)
+                    exceptions.handle(
+                        request, message="Invalid value provided.")
+                    return
+
+                lease = api.client.lease_get(self.request, lease_id)
+                fields['reservations'] = lease['reservations']
+                if len(fields['reservations']) != 1:
+                    messages.error(request, "Cannot update node count for a lease "
+                                            "with multiple reservations.")
+                    return
+                fields['reservations'][0]['min'] = min_hosts
+                fields['reservations'][0]['max'] = min_hosts
+                is_update = True
+
+        reservations = data.get('reservations', None)
+        if reservations:
+            fields['reservations'] = reservations
+            is_update = True
+
+        if not is_update:
+            raise forms.ValidationError("Nothing to update.")
+
+        try:
+            api.client.lease_update(self.request, lease_id=lease_id, **fields)
+            messages.success(request, _("Lease update started."))
+            return True
+        except Exception as e:
+            LOG.error('Error updating lease: %s', e)
+            exceptions.handle(request,
+                              message="An error occurred while updating this "
+                                      "lease: %s. Please try again." % e)

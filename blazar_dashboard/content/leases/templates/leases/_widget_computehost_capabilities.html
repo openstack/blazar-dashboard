@@ -1,4 +1,4 @@
-<div id="criteria-computehost" style="margin-bottom:50px">
+<div id="criteria-computehost" style="margin-bottom:50px" data-switchable-class="{{ widget.switchable_class }}">
     <input id="criteria-payload-computehost" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
     <div id="no-criteria-warning-computehost" class="alert alert-danger" hidden="hidden">
         <strong>No filters are specified,</strong> random hardware will be
@@ -10,14 +10,14 @@
         <ul id="criteria-list-computehost" class="form-inline" style="padding-inline-start:0px;">
         </ul>
     </div>
-    <button id="criteria-add-computehost" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success">Add Filter</button>
+    <button id="criteria-add-computehost" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success {{ widget.switchable_class }}">Add Filter</button>
 </div>
 
 <script>
 
 var cri_div = document.querySelector('#criteria-computehost');
 if (cri_div.dataset.loaded_once === undefined) {
-	capabilitiesjs('computehost');
+	capabilitiesjs('computehost', cri_div.dataset.switchableClass);
 	cri_div.dataset.loaded_once = true;
 	console.log('loaded criteria widget code')
 } else {

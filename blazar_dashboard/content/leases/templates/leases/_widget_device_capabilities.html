@@ -1,4 +1,4 @@
-<div id="criteria-device" style="margin-bottom:50px">
+<div id="criteria-device" style="margin-bottom:50px" data-switchable-class="{{ widget.switchable_class }}">
     <input id="criteria-payload-device" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
     <div id="no-criteria-warning-device" class="alert alert-danger" hidden="hidden">
         <strong>No filters are specified,</strong> random device will be
@@ -9,14 +9,14 @@
         <ul id="criteria-list-device" class="form-inline" style="padding-inline-start:0px;">
         </ul>
     </div>
-    <button id="criteria-add-device" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success">Add Filter</button>
+    <button id="criteria-add-device" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success {{ widget.switchable_class }}">Add Filter</button>
 </div>
 
 <script>
 
 var cri_div = document.querySelector('#criteria-device');
 if (cri_div.dataset.loaded_once === undefined) {
-	capabilitiesjs('device');
+	capabilitiesjs('device', cri_div.dataset.switchableClass);
 	cri_div.dataset.loaded_once = true;
 	console.log('loaded criteria widget code')
 } else {

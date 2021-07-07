@@ -1,0 +1,31 @@
+{% load i18n %}
+{% load static %}
+
+{% block main %}
+    {% include 'horizon/common/_workflow_step.html' %}
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+(function (window, horizon, $, undefined) {
+    'use strict';
+
+    try {
+    	document.addEventListener('network_capability_loaded', function() {
+    		setResourceTypeInput('network');
+    	}, false);
+        $('#id_with_network').on('change', function() {
+        	setResourceTypeInput('network');
+        });
+        
+        setResourceTypeInput('floatingip');
+        $('#id_with_floatingip').on('change', function() {
+        	setResourceTypeInput('floatingip');
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    
+ })(window, horizon, jQuery);
+</script>
+{% endblock %}
