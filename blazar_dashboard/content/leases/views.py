@@ -22,7 +22,7 @@ from blazar_dashboard.content.leases import forms as project_forms
 from blazar_dashboard.content.leases import tables as project_tables
 from blazar_dashboard.content.leases import tabs as project_tabs
 from blazar_dashboard.content.leases import workflows as project_workflows
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -33,6 +33,10 @@ from horizon import tabs
 from horizon import views
 from horizon import workflows
 from horizon.utils import memoized
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class IndexView(tables.DataTableView):
@@ -53,22 +57,15 @@ class CalendarView(views.APIView):
     template_name = 'project/leases/calendar.html'
 
 
-def calendar_data_view(request):
+def calendar_data_view(request, resource_type):
+    api_mapping = {
+        "host": api.client.reservation_calendar,
+        "network": api.client.network_reservation_calendar,
+        "device": api.client.device_reservation_calendar
+    }
     data = {}
-    compute_hosts, reservations = api.client.reservation_calendar(request)
-    data['compute_hosts'] = compute_hosts
-    data['reservations'] = reservations
-    return JsonResponse(data)
-
-
-class NetworkCalendarView(views.APIView):
-    template_name = 'project/leases/network_calendar.html'
-
-
-def network_calendar_data_view(request):
-    data = {}
-    networks, reservations = api.client.network_reservation_calendar(request)
-    data['networks'] = networks
+    resources, reservations = api_mapping[resource_type](request)
+    data['resources'] = resources
     data['reservations'] = reservations
     return JsonResponse(data)
 
@@ -86,18 +83,6 @@ def extra_capabilities(request, resource_type):
             request)
     data = {
         'extra_capabilities': extra_capabilities}
-    return JsonResponse(data)
-
-
-class DeviceCalendarView(views.APIView):
-    template_name = 'project/leases/device_calendar.html'
-
-
-def device_calendar_data_view(request):
-    data = {}
-    devices, reservations = api.client.device_reservation_calendar(request)
-    data['devices'] = devices
-    data['reservations'] = reservations
     return JsonResponse(data)
 
 

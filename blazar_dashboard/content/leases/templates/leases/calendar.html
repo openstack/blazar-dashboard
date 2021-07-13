@@ -3,7 +3,7 @@
 {% block title %}{% trans "Leases" %}{% endblock %}
 
 {% block page_header %}
-  {% include "horizon/common/_page_header.html" with title=_("Host Calendar") %}
+{% include "horizon/common/_page_header.html" with title=resource_type|add:" Calendar"|title %}
 {% endblock page_header %}
 
 {% block main %}
@@ -27,16 +27,44 @@
       :
       00
     </div>
-    <div class="form-group gantt-group">
-      <label for="node-type-chooser">Node Type</label>
-      <select disabled class="form-control" id="node-type-chooser" name="node-type-chooser">
-        <option value="*">All nodes</option>
-      </select>
-    </div>
+    <!-- Custom controls -->
+    {% if resource_type == "host" %}
+      <div class="form-group gantt-group">
+        <label for="node-type-chooser">Node Type</label>
+        <select disabled class="form-control" id="node-type-chooser" name="node-type-chooser">
+          <option value="*">All nodes</option>
+        </select>
+      </div>
+    {% endif %}
+    {% if resource_type == "device" %}
+      <div class="form-group gantt-group">
+        <label for="vendor-chooser">Vendor</label>
+        <select disabled class="form-control" id="vendor-chooser" name="vendor-chooser">
+          <option value="*">All vendors</option>
+        </select>
+      </div>
+    {% endif %}
   </form>
-  <div id="blazar-gantt">
-    <div class="text-center">
-      <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
+  <!-- Type of chart -->
+  {% if resource_type == "host" %}
+    <div id="blazar-gantt">
+      <div class="text-center">
+        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
+      </div>
     </div>
-  </div>
+  {% endif %}
+  {% if resource_type == "network" %}
+    <div id="blazar-gantt-network">
+      <div class="text-center">
+        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
+      </div>
+    </div>
+  {% endif %}
+  {% if resource_type == "device" %}
+    <div id="blazar-gantt-device">
+      <div class="text-center">
+        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}

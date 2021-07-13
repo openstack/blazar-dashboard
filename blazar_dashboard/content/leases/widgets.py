@@ -30,7 +30,7 @@ class CapabilityWidget(Widget):
             'value': value,
         }}
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         context = self.get_context(name, value, attrs)
         template = loader.get_template(self.template_name.format(
             resource_type=self.resource_type)).render(context)
@@ -91,7 +91,7 @@ class TimespanWidget(Widget):
             'value': value,
         }}
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         context = self.get_context(name, value, attrs)
         template = loader.get_template(self.template_name).render(context)
         return mark_safe(template)
