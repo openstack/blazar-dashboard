@@ -1,10 +1,10 @@
 <div id="criteria-network" style="margin-bottom:50px" data-switchable-class="{{ widget.switchable_class }}">
-    <input id="criteria-payload-network" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
-    <div id="no-criteria-warning-network" class="alert alert-danger" hidden="hidden">
+    <label id="no-criteria-warning-network" class="alert alert-danger" hidden="hidden">
         <strong>No filters are specified,</strong> random network will be
         assigned. Recommend that you
         <a href="#" class="cri-adder" data-cri-name="physical_network">add a filter for a physical network</a>.
-    </div>
+    </label>
+    <input id="criteria-payload-network" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
     <div>
         <ul id="criteria-list-network" class="form-inline" style="padding-inline-start:0px;">
         </ul>

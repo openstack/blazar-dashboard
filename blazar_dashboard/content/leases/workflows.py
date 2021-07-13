@@ -246,10 +246,11 @@ class SetHostsAction(workflows.Action):
             raise forms.ValidationError(
                 "No host is reserved! "
                 "Clear \"Reserve Hosts\" checkbox "
-                "in previous step if you don't need "
-                "host resources.")
+                "if you don't need host resources.")
 
-        if (cleaned_data['min_hosts'] > cleaned_data['max_hosts']):
+        if (cleaned_data['min_hosts'] and
+            cleaned_data['max_hosts'] and
+                cleaned_data['min_hosts'] > cleaned_data['max_hosts']):
             raise forms.ValidationError(
                 "Max hosts is less than min hosts!")
 
@@ -257,7 +258,8 @@ class SetHostsAction(workflows.Action):
             self.request,
             start_date,
             end_date)
-        if (cleaned_data['min_hosts'] > num_hosts):
+        if (cleaned_data['min_hosts'] and
+                cleaned_data['min_hosts'] > num_hosts):
             raise forms.ValidationError(_(
                 "Not enough hosts are available for this reservation "
                 "(minimum %s requested; %s available). Try adjusting "
@@ -364,8 +366,7 @@ class SetNetworksAction(workflows.Action):
             raise forms.ValidationError(
                 "No network resource is reserved! "
                 "Clear \"Reserve Networks\" checkbox "
-                "in previous step if you don't need "
-                "network resources.")
+                "if you don't need network resources.")
 
         return cleaned_data
 
@@ -435,8 +436,7 @@ class SetDevicesAction(workflows.Action):
             raise forms.ValidationError(
                 "No device is reserved! "
                 "Clear \"Reserve Devices\" checkbox "
-                "in previous step if you don't need "
-                "device resources.")
+                "if you don't need device resources.")
 
         if (cleaned_data['min_devices'] > cleaned_data['max_devices']):
             raise forms.ValidationError(
