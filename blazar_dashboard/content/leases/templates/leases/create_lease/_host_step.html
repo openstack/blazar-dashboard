@@ -1,0 +1,26 @@
+{% load i18n %}
+{% load static %}
+
+{% block main %}
+    {% include 'horizon/common/_workflow_step.html' %}
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+(function (window, horizon, $, undefined) {
+    'use strict';
+
+    try {
+    	document.addEventListener('computehost_capability_loaded', function() {
+    		setResourceTypeInput('computehost')
+    	}, false);
+    	$('#id_with_computehost').on('change', function() {
+        	setResourceTypeInput('computehost');
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    
+ })(window, horizon, jQuery);
+</script>
+{% endblock %}

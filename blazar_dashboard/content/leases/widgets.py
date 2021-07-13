@@ -22,12 +22,14 @@ class CapabilityWidget(Widget):
 
     def __init__(self, *args, **kwargs):
         self.resource_type = kwargs.pop('resource_type')
+        self.switchable_class = kwargs.pop('switchable_class')
         super(CapabilityWidget, self).__init__(*args, **kwargs)
 
     def get_context(self, name, value, attrs=None):
         return {'widget': {
             'name': name,
             'value': value,
+            'switchable_class': self.switchable_class
         }}
 
     def render(self, name, value, attrs=None):

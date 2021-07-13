@@ -1,4 +1,4 @@
-<div id="criteria-network" style="margin-bottom:50px">
+<div id="criteria-network" style="margin-bottom:50px" data-switchable-class="{{ widget.switchable_class }}">
     <input id="criteria-payload-network" form_data="{{ widget.value }}" name="criteria-{{ widget.name }}" type="hidden">
     <div id="no-criteria-warning-network" class="alert alert-danger" hidden="hidden">
         <strong>No filters are specified,</strong> random network will be
@@ -9,14 +9,14 @@
         <ul id="criteria-list-network" class="form-inline" style="padding-inline-start:0px;">
         </ul>
     </div>
-    <button id="criteria-add-network" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success">Add Filter</button>
+    <button id="criteria-add-network" style="margin-top:10px;float:right;" type="button" class="btn btn-sm btn-success {{ widget.switchable_class }}">Add Filter</button>
 </div>
 
 <script>
 
 var cri_div = document.querySelector('#criteria-network');
 if (cri_div.dataset.loaded_once === undefined) {
-	capabilitiesjs('network');
+	capabilitiesjs('network', cri_div.dataset.switchableClass);
 	cri_div.dataset.loaded_once = true;
 	console.log('loaded criteria widget code')
 } else {
