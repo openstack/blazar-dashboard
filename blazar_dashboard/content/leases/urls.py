@@ -19,8 +19,8 @@ from django.conf.urls import url
 LEASE_URL = r'^(?P<lease_id>[^/]+)/%s$'
 
 urlpatterns = [
-    url(r'^calendar/(?P<resource_type>\w+)/$', leases_views.CalendarView.as_view(), name='calendar'),
-    url(r'^calendar/(?P<resource_type>\w+)/resources.json$', leases_views.calendar_data_view,
+    url(r'^calendar/(?P<resource_type>(host|device|network))/$', leases_views.CalendarView.as_view(), name='calendar'),
+    url(r'^calendar/(?P<resource_type>(host|device|network))/resources.json$', leases_views.calendar_data_view,
         name='calendar_data'),
 
     url(r'^(?P<resource_type>[^/]+)/extras\.json$',

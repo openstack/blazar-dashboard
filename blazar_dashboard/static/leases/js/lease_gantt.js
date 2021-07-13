@@ -3,15 +3,15 @@
 
   // don't run on other pages. the JS is loaded everywhere via the
   // ADD_JS_FILES directive in the .py file in enabled/
-  var gantt_element = undefined;
-  var resource_type = undefined;
-  var selector = undefined;
-  var task_attr = undefined;
-  var populateChooser = undefined;
-  if ($('#blazar-gantt').length !== 0) {
-    gantt_element = $('#blazar-gantt');
-    resource_type = "host";
-    selector = '#blazar-gantt';
+  var selector = undefined; // what selector determines the gantt_element
+  var task_attr = undefined; // what attribute from resources.json labels each chart row
+  var resource_type_attr = undefined; // what attribute from resources.json should be used to categorize resources
+  var populateChooser = undefined; // a function that (partially) fills the resource category filter
+  var filterTaskNames = undefined; // a function that filters task names for use
+  console.log("new js")
+  if ($('#blazar-gantt-host').length !== 0) {
+    selector = '#blazar-gantt-host';
+    resource_type_attr = "node_type";
     task_attr = "node_name";
     populateChooser = function(chooser, availableResourceTypes){
       var nodeTypesPretty = [ // preserve order so it's not random
@@ -34,8 +34,6 @@
         ['atom', 'Atom'],
         ['arm64', 'ARM64'],
       ];
-
-      chooser.empty(); // make idempotent so multiple loads don't fill multiple times (should also fix the multiple-load thing later...)
       chooser.append(new Option('All Nodes', '*'));
       nodeTypesPretty.forEach(function(nt) {
         if (availableResourceTypes[nt[0]]) {
@@ -43,26 +41,21 @@
           delete availableResourceTypes[nt[0]];
         }
       });
-      // fill chooser with node-types without a pretty name (when new ones pop up)
-      Object.keys(availableResourceTypes).forEach(function (key) {
-        if (availableResourceTypes[key]) {
-          chooser.append(new Option(key, key));
-        }
-      });
-      chooser.prop('disabled', false);
+    }
+    filterTaskNames = function(resources){
+      resources
+        .filter(function (host) {return nodeType === '*' || nodeType === host.node_type})
+        .map(function (host) {return host.node_name});
     }
   }
   if ($('#blazar-gantt-network').length !== 0) {
-    gantt_element = $('#blazar-gantt-network');
-    resource_type = "network";
     selector = '#blazar-gantt-network'
   }
   if ($('#blazar-gantt-device').length !== 0) {
-    gantt_element = $('#blazar-gantt-device');
-    resource_type = "device";
     selector = '#blazar-gantt-device'
   }
-  if (gantt_element == undefined) return;
+  if (selector == undefined) return;
+  var gantt_element = $(selector);
 
   function init() {
     var gantt;
@@ -81,7 +74,6 @@
     // Horizon seems to call us twice for some reason
     if (gantt_element.hasClass("loaded").length > 0) {
       console.log('blocking duplicate init');
-      return;
     }
     gantt_element.addClass('loaded');
 
@@ -109,15 +101,24 @@
 
       // populate node-type-chooser
       var availableResourceTypes = {};
-      resources.forEach(function(host) {
-          availableResourceTypes[host.node_type] = true;
+      resources.forEach(function(resource) {
+          availableResourceTypes[resource[resource_type_attr]] = true;
       });
       var chooser = $("#node-type-chooser");
+      chooser.empty(); // make idempotent so multiple loads don't fill multiple times (should also fix the multiple-load thing later...)
       populateChooser(chooser, availableResourceTypes)
-
-      var taskNames = $.map(resp.resources, function(host, i) {
-        return host[task_attr];
+      // fill chooser with node-types without a pretty name (when new ones pop up)
+      Object.keys(availableResourceTypes).forEach(function (key) {
+        if (availableResourceTypes[key]) {
+          chooser.append(new Option(key, key));
+        }
       });
+      chooser.prop('disabled', false);
+
+      var taskNames = $.map(resp.resources, function(resource, i) {
+        return resource[task_attr];
+      });
+
       /* set initial time range */
       var timeDomain = computeTimeDomain(7);
 
@@ -132,6 +133,10 @@
       });
       gantt(tasks);
       setTimeDomain(timeDomain);
+      console.log(tasks);
+	console.log(timeDomain)
+	    console.log(taskNames)
+	    console.log(taskStatus)
     })
     .fail(function() {
       gantt_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
@@ -186,9 +191,7 @@
       var timeDomain = getTimeDomain();
       var nodeType = $('#node-type-chooser').val();
 
-      var filteredTaskNames = resources
-        .filter(function (host) {return nodeType === '*' || nodeType === host.node_type})
-        .map(function (host) {return host.node_name});
+      var filteredTaskNames = filterTaskNames(resources);
 
       tasks = all_tasks.filter(function(task) {
         return filteredTaskNames.indexOf(task.taskName) >= 0

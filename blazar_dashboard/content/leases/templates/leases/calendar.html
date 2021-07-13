@@ -46,25 +46,11 @@
     {% endif %}
   </form>
   <!-- Type of chart -->
-  {% if resource_type == "host" %}
-    <div id="blazar-gantt">
+  <div id="blazar-gantt">
+    <div id="blazar-gantt-{{resource_type}}">
       <div class="text-center">
         <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
       </div>
     </div>
-  {% endif %}
-  {% if resource_type == "network" %}
-    <div id="blazar-gantt-network">
-      <div class="text-center">
-        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
-      </div>
-    </div>
-  {% endif %}
-  {% if resource_type == "device" %}
-    <div id="blazar-gantt-device">
-      <div class="text-center">
-        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
-      </div>
-    </div>
-  {% endif %}
+  </div>
 {% endblock %}
