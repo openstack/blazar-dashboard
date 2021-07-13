@@ -195,8 +195,7 @@ class SetGeneral(workflows.Step):
     action_class = SetGeneralAction
     template_name = 'project/leases/create_lease/_general_step.html'
     contributes = ("name", "start_date", "start_time",
-                   "number_of_days", "end_date", "end_time",
-                   "with_host", "with_network", "with_device")
+                   "number_of_days", "end_date", "end_time")
 
 
 class SetHostsAction(workflows.Action):
@@ -239,14 +238,7 @@ class SetHostsAction(workflows.Action):
         help_text_template = ("project/leases/create_lease/"
                               "_host_help.html")
 
-    def _remove_fields_errors(self):
-        self._errors = {}
-
     def clean(self):
-        with_host = self.initial.get('with_host')
-        if not with_host:
-            self._remove_fields_errors()
-            return None
         start_date = self.initial.get('start_date')
         end_date = self.initial.get('end_date')
         cleaned_data = super(SetHostsAction, self).clean()
@@ -279,7 +271,7 @@ class SetHostsAction(workflows.Action):
 class SetHosts(workflows.Step):
     action_class = SetHostsAction
     template_name = 'project/leases/create_lease/_host_step.html'
-    contributes = ("with_host", "min_hosts", "max_hosts",
+    contributes = ("with_computehost", "min_hosts", "max_hosts",
                    "computehost_resource_properties")
 
     def allowed(self, request):
@@ -491,7 +483,7 @@ class CreateLease(workflows.Workflow):
         return message % self.context.get('name')
 
     def is_valid(self):
-        if (not self.context.get('with_host', False) and
+        if (not self.context.get('with_computehost', False) and
             not self.context.get('with_network', False) and
             not self.context.get('with_floatingip', False) and
                 not self.context.get('with_device', False)):
@@ -500,7 +492,7 @@ class CreateLease(workflows.Workflow):
 
     def handle(self, request, data):
         reservations = []
-        if (data.get('with_host', False) and
+        if (data.get('with_computehost', False) and
             conf.host_reservation.get('enabled', False) and
                 data['min_hosts'] > 0 and data['max_hosts'] > 0):
             res_props = data.get('computehost_resource_properties', '')
@@ -512,7 +504,7 @@ class CreateLease(workflows.Workflow):
                     'hypervisor_properties': '',
                     'resource_properties': res_props,
                 })
-        if (data.get('with_network', False) and
+        if (data.get('with_floatingip', False) and
             conf.floatingip_reservation.get('enabled', False) and
                 data['network_ip_count'] > 0):
             network_id = api.client.get_floatingip_network_id(
