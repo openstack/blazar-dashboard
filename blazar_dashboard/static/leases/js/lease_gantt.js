@@ -1,17 +1,20 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
-  // don't run on other pages. the JS is loaded everywhere via the
-  // ADD_JS_FILES directive in the .py file in enabled/
-  var gantt_element = undefined;
-  var resource_type = undefined;
-  var selector = undefined;
-  var task_attr = undefined;
-  var populateChooser = undefined;
-  if ($('#blazar-gantt').length !== 0) {
-    gantt_element = $('#blazar-gantt');
-    resource_type = "host";
-    selector = '#blazar-gantt';
+  var selector = undefined; // what selector determines the gantt_element
+  var task_attr = undefined; // what attribute from resources.json labels each chart row
+  var plural_resource_type = undefined; // This resource type plural display name
+
+  // Used for the chooser filter. Leave undefined for no filter
+  var resource_type_attr = undefined; // what attribute from resources.json should be used to categorize resources
+  var resource_type_pretty = undefined; // display name for resource_type_attr
+  var populateChooser = undefined; // a function that (partially) fills the resource category filter
+  var filterTaskNames = function(resources, nodeType){return []}; // a function that filters tasks based on the chooser value
+  if ($('#blazar-gantt-host').length !== 0) {
+    selector = '#blazar-gantt-host';
+    resource_type_attr = "node_type";
+    resource_type_pretty = "Node Type";
+    plural_resource_type = "Hosts";
     task_attr = "node_name";
     populateChooser = function(chooser, availableResourceTypes){
       var nodeTypesPretty = [ // preserve order so it's not random
@@ -34,8 +37,6 @@
         ['atom', 'Atom'],
         ['arm64', 'ARM64'],
       ];
-
-      chooser.empty(); // make idempotent so multiple loads don't fill multiple times (should also fix the multiple-load thing later...)
       chooser.append(new Option('All Nodes', '*'));
       nodeTypesPretty.forEach(function(nt) {
         if (availableResourceTypes[nt[0]]) {
@@ -43,26 +44,35 @@
           delete availableResourceTypes[nt[0]];
         }
       });
-      // fill chooser with node-types without a pretty name (when new ones pop up)
-      Object.keys(availableResourceTypes).forEach(function (key) {
-        if (availableResourceTypes[key]) {
-          chooser.append(new Option(key, key));
-        }
-      });
-      chooser.prop('disabled', false);
+    }
+    filterTaskNames = function(resources, nodeType){
+      return resources
+        .filter(function (host) {return nodeType === '*' || nodeType === host.node_type})
+        .map(function (host) {return host.node_name});
     }
   }
   if ($('#blazar-gantt-network').length !== 0) {
-    gantt_element = $('#blazar-gantt-network');
-    resource_type = "network";
     selector = '#blazar-gantt-network'
+    plural_resource_type = "Networks"
+    task_attr = "segment_id";
   }
   if ($('#blazar-gantt-device').length !== 0) {
-    gantt_element = $('#blazar-gantt-device');
-    resource_type = "device";
     selector = '#blazar-gantt-device'
+    resource_type_attr = "vendor";
+    resource_type_pretty = "Vendor";
+    task_attr = "device_name";
+    populateChooser = function(chooser, availableResourceTypes){
+      chooser.append(new Option('All Vendors', '*'));
+    }
+    plural_resource_type = "Devices"
+    filterTaskNames = function(resources, nodeType){
+      return resources
+        .filter(function (device) {return nodeType === '*' || nodeType === device.vendor})
+        .map(function (device) {return device.device_name});
+    }
   }
-  if (gantt_element == undefined) return;
+  if (selector == undefined) return;
+  var gantt_element = $(selector);
 
   function init() {
     var gantt;
@@ -81,46 +91,71 @@
     // Horizon seems to call us twice for some reason
     if (gantt_element.hasClass("loaded").length > 0) {
       console.log('blocking duplicate init');
-      return;
     }
     gantt_element.addClass('loaded');
 
     $.getJSON("resources.json")
     .done(function(resp) {
-
       all_tasks = resp.reservations.map(function(reservation, i) {
-        reservation.resources = resp.reservations.filter(
-          function(r) {
-            return r.id === this.id;
-          },
-          reservation
-        ).map(function(h) { return h[task_attr]; });
+        reservation.resources = resp.reservations
+          .filter( function(r) { return r.id === reservation.id; })
+          .map(function(r) { return r[task_attr]; });
 
         return {
           'startDate': new Date(reservation.start_date),
           'endDate': new Date(reservation.end_date),
           'taskName': reservation[task_attr],
           'status': reservation.status,
-          'data': reservation
+          'data': reservation,
+          'resource_type': plural_resource_type
         }
       });
       tasks = all_tasks;
       resources = resp.resources;
 
       // populate node-type-chooser
-      var availableResourceTypes = {};
-      resources.forEach(function(host) {
-          availableResourceTypes[host.node_type] = true;
-      });
-      var chooser = $("#node-type-chooser");
-      populateChooser(chooser, availableResourceTypes)
+      var chooser = $("#resource-type-chooser");
+      if(populateChooser != undefined){
+        $("label[for='resource-type-chooser']").text(resource_type_pretty);
+        var availableResourceTypes = {};
+        resources.forEach(function(resource) {
+            availableResourceTypes[resource[resource_type_attr]] = true;
+        });
+        chooser.empty();
+        populateChooser(chooser, availableResourceTypes)
+        Object.keys(availableResourceTypes).forEach(function (key) {
+          if (availableResourceTypes[key]) {
+            chooser.append(new Option(key, key));
+          }
+        });
+        chooser.prop('disabled', false);
+        chooser.change(function() {
+          var timeDomain = getTimeDomain();
+          var nodeType = $('#resource-type-chooser').val();
+          var filteredTaskNames = filterTaskNames(resources, nodeType);
+          tasks = all_tasks.filter(function(task) {
+            return filteredTaskNames.includes(task.taskName)
+          });
+          construct_gantt(tasks, filteredTaskNames, timeDomain)
+        });
+      } else {
+        chooser.hide()
+      }
 
-      var taskNames = $.map(resp.resources, function(host, i) {
-        return host[task_attr];
+      var taskNames = $.map(resp.resources, function(resource, i) {
+        return resource[task_attr];
       });
+
       /* set initial time range */
       var timeDomain = computeTimeDomain(7);
 
+      construct_gantt(tasks, taskNames, timeDomain)
+    })
+    .fail(function() {
+      gantt_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
+    });
+
+    function construct_gantt(tasks, taskNames, timeDomain){
       gantt_element.empty().height(20 * taskNames.length);
       gantt = d3.gantt({
         selector: selector,
@@ -132,10 +167,7 @@
       });
       gantt(tasks);
       setTimeDomain(timeDomain);
-    })
-    .fail(function() {
-      gantt_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
-    });
+    }
 
     function computeTimeDomain(days) {
       var padFraction = 1/8; // gantt chart default is 3 hours for 1 day
@@ -180,31 +212,6 @@
 
     $('input[data-datepicker]', form).datepicker({
       dateFormat: 'mm/dd/yyyy'
-    });
-
-    $('#node-type-chooser').change(function() {
-      var timeDomain = getTimeDomain();
-      var nodeType = $('#node-type-chooser').val();
-
-      var filteredTaskNames = resources
-        .filter(function (host) {return nodeType === '*' || nodeType === host.node_type})
-        .map(function (host) {return host.node_name});
-
-      tasks = all_tasks.filter(function(task) {
-        return filteredTaskNames.indexOf(task.taskName) >= 0
-      });
-
-      gantt_element.empty().height(20 * filteredTaskNames.length);
-      gantt = d3.gantt({
-        selector: selector,
-        taskTypes: filteredTaskNames,
-        taskStatus: taskStatus,
-        tickFormat: format,
-        timeDomainStart: timeDomain[0],
-        timeDomainEnd: timeDomain[1],
-      });
-      console.log(tasks)
-      gantt(tasks);
     });
 
     $('input', form).on('change', function() {

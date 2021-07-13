@@ -60,7 +60,6 @@ d3.gantt = function(options) {
   function tooltipContent(d) {
     var fmt = d3.time.format('%-m/%d/%Y at %-I:%M %p');
     var toolTipStr = '<div class="tooltip-content">'
-
     if ('project_id' in d.data) {
         toolTipStr += '<dl><dt>Project</dt><dd>' + d.data.project_id
     }
@@ -70,8 +69,8 @@ d3.gantt = function(options) {
     }
 
     return toolTipStr
-      + '</dd><dt>Hosts</dt><dd>'
-      + d.data.hosts.join('<br>')
+      + '</dd><dt>' + d.resource_type + '</dt><dd>'
+      + d.data.resources.join('<br>')
       + '</dd><dt>Reserved</dt><dd>'
       + fmt(d.startDate) + ' <strong>to</strong><br/> ' + fmt(d.endDate)
       + '</dd></dl></div>';

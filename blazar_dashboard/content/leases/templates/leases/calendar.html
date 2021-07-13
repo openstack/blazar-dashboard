@@ -27,44 +27,15 @@
       :
       00
     </div>
-    <!-- Custom controls -->
-    {% if resource_type == "host" %}
-      <div class="form-group gantt-group">
-        <label for="node-type-chooser">Node Type</label>
-        <select disabled class="form-control" id="node-type-chooser" name="node-type-chooser">
-          <option value="*">All nodes</option>
-        </select>
-      </div>
-    {% endif %}
-    {% if resource_type == "device" %}
-      <div class="form-group gantt-group">
-        <label for="vendor-chooser">Vendor</label>
-        <select disabled class="form-control" id="vendor-chooser" name="vendor-chooser">
-          <option value="*">All vendors</option>
-        </select>
-      </div>
-    {% endif %}
+    <div class="form-group gantt-group">
+      <label for="resource-type-chooser"></label>
+      <select disabled class="form-control" id="resource-type-chooser" name="resource-type-chooser">
+      </select>
+    </div>
   </form>
-  <!-- Type of chart -->
-  {% if resource_type == "host" %}
-    <div id="blazar-gantt">
-      <div class="text-center">
-        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
-      </div>
+  <div class="blazar-gantt" id="blazar-gantt-{{resource_type}}">
+    <div class="text-center">
+      <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
     </div>
-  {% endif %}
-  {% if resource_type == "network" %}
-    <div id="blazar-gantt-network">
-      <div class="text-center">
-        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
-      </div>
-    </div>
-  {% endif %}
-  {% if resource_type == "device" %}
-    <div id="blazar-gantt-device">
-      <div class="text-center">
-        <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
-      </div>
-    </div>
-  {% endif %}
+  </div>
 {% endblock %}

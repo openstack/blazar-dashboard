@@ -53,7 +53,7 @@ class UpdateLease(tables.LinkAction):
         return False
 
 
-class ViewLeaseCalendar(tables.LinkAction):
+class ViewHostCalendar(tables.LinkAction):
     # TODO(nicktimko) move calendar to a panel
     name = "calendar"
     verbose_name = _("Host Calendar")
@@ -131,7 +131,7 @@ class LeasesTable(tables.DataTable):
         if conf.network_reservation.get('enabled'):
             table_actions.insert(0, ViewNetworkReservationCalendar)
         if conf.host_reservation.get('enabled'):
-            table_actions.insert(0, ViewLeaseCalendar)
+            table_actions.insert(0, ViewHostCalendar)
         if conf.device_reservation.get('enabled'):
             table_actions.insert(0, ViewDeviceReservationCalendar)
 
