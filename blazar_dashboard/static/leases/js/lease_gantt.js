@@ -214,6 +214,29 @@
       dateFormat: 'mm/dd/yyyy'
     });
 
+    $('#node-type-chooser').change(function() {
+      var timeDomain = getTimeDomain();
+      var nodeType = $('#node-type-chooser').val();
+
+      var filteredTaskNames = filterTaskNames(resources);
+
+      tasks = all_tasks.filter(function(task) {
+        return filteredTaskNames.indexOf(task.taskName) >= 0
+      });
+
+      gantt_element.empty().height(20 * filteredTaskNames.length);
+      gantt = d3.gantt({
+        selector: selector,
+        taskTypes: filteredTaskNames,
+        taskStatus: taskStatus,
+        tickFormat: format,
+        timeDomainStart: timeDomain[0],
+        timeDomainEnd: timeDomain[1],
+      });
+      console.log(tasks)
+      gantt(tasks);
+    });
+
     $('input', form).on('change', function() {
       if (form.hasClass('time-domain-processed')) {
         var timeDomain = getTimeDomain();
