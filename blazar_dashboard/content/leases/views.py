@@ -34,10 +34,6 @@ from horizon import views
 from horizon import workflows
 from horizon.utils import memoized
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 class IndexView(tables.DataTableView):
     table_class = project_tables.LeasesTable
@@ -55,6 +51,16 @@ class IndexView(tables.DataTableView):
 
 class CalendarView(views.APIView):
     template_name = 'project/leases/calendar.html'
+
+    titles = {
+        "host": _("Host Calendar"),
+        "network": _("Network Calendar"),
+        "device": _("Device Calendar"),
+    }
+
+    def get_data(self, request, context, *args, **kwargs):
+        context["calendar_title"] = self.titles[context["resource_type"]]
+        return context
 
 
 def calendar_data_view(request, resource_type):
