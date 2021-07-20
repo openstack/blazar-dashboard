@@ -66,6 +66,7 @@
     var all_reservations; // All reservations
     var filtered_reservations; // Reservations to show based on filter
     var form;
+    var resources; // Used to calculate the height of the chart
 
     // Guard against re-running init() and a pointless calendar.json load.
     // Horizon seems to call us twice for some reason
@@ -76,6 +77,7 @@
 
     $.getJSON("resources.json")
       .done(function(resp) {
+        resources = resp.resources;
         var reservations_with_resources = resp.reservations;
         reservations_with_resources.forEach( function(reservation) {
           resp.resources.forEach(function(resource){
@@ -151,21 +153,23 @@
       calendar_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
     });
 
-    function construct_calendar(tasks, timeDomain){
-      calendar_element.empty().height(20 * tasks.length);
+    function construct_calendar(rows, timeDomain){
+      calendar_element.empty();
       var options = {
-        series: tasks,
+        series: rows,
         chart: {
           type: 'rangeBar',
           toolbar: {show: false},
           zoom: {enabled: false, type: 'xy'},
+          height: 60 * resources.length,
+          width: "100%",
         },
         plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
         xaxis: { type: 'datetime' },
         legend: { show: false },
         tooltip: {
           custom: function({series, seriesIndex, dataPointIndex, w}) {
-            var datum = tasks[seriesIndex]
+            var datum = rows[seriesIndex]
             var resources_reserved = datum.data.map(function(el){ return el.x }).join("<br>")
             return `<div class='tooltip-content'><dl>
               <dt>Project</dt>
