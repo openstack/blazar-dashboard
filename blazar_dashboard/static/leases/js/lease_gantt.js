@@ -11,30 +11,30 @@
   var populateChooser = undefined; // a function that (partially) fills the resource category filter
   if ($('#blazar-calendar-host').length !== 0) {
     selector = '#blazar-calendar-host';
-    chooser_attr = "node_type";
-    chooser_attr_pretty = "Node Type";
-    plural_resource_type = "Hosts";
     row_attr = "node_name";
+    plural_resource_type = gettext("Hosts");
+    chooser_attr = "node_type";
+    chooser_attr_pretty = gettext("Node Type");
     populateChooser = function(chooser, availableResourceTypes){
       var nodeTypesPretty = [ // preserve order so it's not random
-        ['compute', 'Compute Node'],
-        ['storage', 'Storage'],
-        ['gpu_k80', 'GPU (K80)'],
-        ['gpu_m40', 'GPU (M40)'],
-        ['gpu_p100', 'GPU (P100)'],
-        ['gpu_p100_nvlink', 'GPU (P100 + NVLink)'],
-        ['gpu_p100_v100', 'GPU (P100 + V100)'],
-        ['compute_cascadelake', 'Cascade Lake'],
-        ['compute_cascadelake_r', 'Cascade Lake R'],
-        ['compute_skylake', 'Skylake'],
-        ['compute_haswell', 'Haswell'],
-        ['compute_haswell_ib', 'Haswell + Infiniband Support'],
-        ['compute_ib', 'Infiniband Support'],
-        ['storage_hierarchy', 'Storage Hierarchy'],
-        ['fpga', 'FPGA'],
-        ['lowpower_xeon', 'Low power Xeon'],
-        ['atom', 'Atom'],
-        ['arm64', 'ARM64'],
+        ['compute', gettext('Compute Node')],
+        ['storage', gettext('Storage')],
+        ['gpu_k80', gettext('GPU (K80)')],
+        ['gpu_m40', gettext('GPU (M40)')],
+        ['gpu_p100', gettext('GPU (P100)')],
+        ['gpu_p100_nvlink', gettext('GPU (P100 + NVLink)')],
+        ['gpu_p100_v100', gettext('GPU (P100 + V100)')],
+        ['compute_cascadelake', gettext('Cascade Lake')],
+        ['compute_cascadelake_r', gettext('Cascade Lake R')],
+        ['compute_skylake', gettext('Skylake')],
+        ['compute_haswell', gettext('Haswell')],
+        ['compute_haswell_ib', gettext('Haswell + Infiniband Support')],
+        ['compute_ib', gettext('Infiniband Support')],
+        ['storage_hierarchy', gettext('Storage Hierarchy')],
+        ['fpga', gettext('FPGA')],
+        ['lowpower_xeon', gettext('Low power Xeon')],
+        ['atom', gettext('Atom')],
+        ['arm64', gettext('ARM64')],
       ];
       nodeTypesPretty.forEach(function(nt) {
         if (availableResourceTypes[nt[0]]) {
@@ -46,16 +46,16 @@
   }
   if ($('#blazar-calendar-network').length !== 0) {
     selector = '#blazar-calendar-network'
-    plural_resource_type = "Networks"
+    plural_resource_type = gettext("Networks")
     row_attr = "segment_id";
   }
   if ($('#blazar-calendar-device').length !== 0) {
     selector = '#blazar-calendar-device'
-    plural_resource_type = "Devices"
+    plural_resource_type = gettext("Devices")
     row_attr = "device_name";
 
     chooser_attr = "vendor";
-    chooser_attr_pretty = "Vendor";
+    chooser_attr_pretty = gettext("Vendor");
     populateChooser = function(chooser, availableResourceTypes){}
   }
   if (selector == undefined) return;
@@ -63,7 +63,7 @@
 
   function init() {
     var chart; // The chart object
-    var all_reservations; // All reservations
+    var all_reservations;
     var filtered_reservations; // Reservations to show based on filter
     var form;
     var resources; // Used to calculate the height of the chart
@@ -126,7 +126,7 @@
               availableResourceTypes[resource[chooser_attr]] = true;
           });
           chooser.empty();
-          chooser.append(new Option(`All ${plural_resource_type}`, '*'));
+          chooser.append(new Option(`${gettext("All")} ${plural_resource_type}`, '*'));
           populateChooser(chooser, availableResourceTypes)
           Object.keys(availableResourceTypes).forEach(function (key) {
             chooser.append(new Option(key, key));
@@ -150,7 +150,7 @@
         construct_calendar(filtered_reservations, computeTimeDomain(7))
     })
     .fail(function() {
-      calendar_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
+      calendar_element.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
     });
 
     function construct_calendar(rows, timeDomain){
@@ -172,12 +172,12 @@
             var datum = rows[seriesIndex]
             var resources_reserved = datum.data.map(function(el){ return el.x }).join("<br>")
             return `<div class='tooltip-content'><dl>
-              <dt>Project</dt>
+              <dt>${gettext("Project")}</dt>
                 <dd>${datum.project_id}</dd>
               <dt>${plural_resource_type}</dt>
                 <dd>${resources_reserved}</dd>
-              <dt>Reserved</dt>
-                <dd>${datum.start_date} <strong>to</strong> ${datum.end_date}</dd>
+              <dt>${gettext("Reserved")}</dt>
+                <dd>${datum.start_date} <strong>${gettext("to")}</strong> ${datum.end_date}</dd>
             </dl></div>`
           }
         },
