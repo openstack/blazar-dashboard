@@ -7,33 +7,33 @@
 {% endblock page_header %}
 
 {% block main %}
-  <form class="form-inline" name="blazar-gantt-controls">
-    <div class="form-group gantt-group">
-      <button class="btn btn-sm btn-default gantt-quickdays" data-gantt-days="1">1d</button>
-      <button class="btn btn-sm btn-default gantt-quickdays" data-gantt-days="7">1w</button>
-      <button class="btn btn-sm btn-default gantt-quickdays" data-gantt-days="31">1m</button>
+  <form class="form-inline" name="blazar-calendar-controls">
+    <div class="form-group calendar-group">
+      <button class="btn btn-sm btn-default calendar-quickdays" data-calendar-days="1">1d</button>
+      <button class="btn btn-sm btn-default calendar-quickdays" data-calendar-days="7">1w</button>
+      <button class="btn btn-sm btn-default calendar-quickdays" data-calendar-days="31">1m</button>
     </div>
-    <div class="form-group gantt-group">
+    <div class="form-group calendar-group">
       <label for="dateStart">Start</label>
-      <input class="form-control gantt-datebox-date" type="text" name="dateStart" id="dateStart" placeholder="MM/DD/YYYY">
-      <input class="form-control gantt-datebox-hour" type="number" min="00" max="23" name="timeStartHours" id="timeStartHours" placeholder="hh">
+      <input class="form-control calendar-datebox-date" type="text" name="dateStart" id="dateStart" placeholder="MM/DD/YYYY">
+      <input class="form-control calendar-datebox-hour" type="number" min="00" max="23" name="timeStartHours" id="timeStartHours" placeholder="hh">
       :
       00
     </div>
-    <div class="form-group gantt-group">
+    <div class="form-group calendar-group">
       <label for="dateEnd">End</label>
-      <input class="form-control gantt-datebox-date" type="text" name="dateEnd" id="dateEnd" placeholder="MM/DD/YYYY">
-      <input class="form-control gantt-datebox-hour" type="number" min="00" max="23" name="timeEndHours" id="timeEndHours" placeholder="hh">
+      <input class="form-control calendar-datebox-date" type="text" name="dateEnd" id="dateEnd" placeholder="MM/DD/YYYY">
+      <input class="form-control calendar-datebox-hour" type="number" min="00" max="23" name="timeEndHours" id="timeEndHours" placeholder="hh">
       :
       00
     </div>
-    <div class="form-group gantt-group">
+    <div class="form-group calendar-group">
       <label for="resource-type-chooser"></label>
       <select disabled class="form-control" id="resource-type-chooser" name="resource-type-chooser">
       </select>
     </div>
   </form>
-  <div class="blazar-gantt" id="blazar-gantt-{{resource_type}}">
+  <div class="blazar-calendar" id="blazar-calendar-{{resource_type}}">
     <div class="text-center">
       <h2>Loading Reservations<br><i class="fa fa-spinner fa-spin"></i></h2>
     </div>

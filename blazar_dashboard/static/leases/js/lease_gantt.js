@@ -1,21 +1,20 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
-  var selector = undefined; // what selector determines the gantt_element
-  var task_attr = undefined; // what attribute from resources.json labels each chart row
+  var selector = undefined; // what selector determines the calendar_element
+  var row_attr = undefined; // what attribute from resources.json labels each chart row
   var plural_resource_type = undefined; // This resource type plural display name
 
   // Used for the chooser filter. Leave undefined for no filter
-  var resource_type_attr = undefined; // what attribute from resources.json should be used to categorize resources
-  var resource_type_pretty = undefined; // display name for resource_type_attr
+  var chooser_attr = undefined; // what attribute from resources.json should be used to categorize resources
+  var chooser_attr_pretty = undefined; // display name for chooser_attr
   var populateChooser = undefined; // a function that (partially) fills the resource category filter
-  var filterTaskNames = function(resources, nodeType){return []}; // a function that filters tasks based on the chooser value
-  if ($('#blazar-gantt-host').length !== 0) {
-    selector = '#blazar-gantt-host';
-    resource_type_attr = "node_type";
-    resource_type_pretty = "Node Type";
+  if ($('#blazar-calendar-host').length !== 0) {
+    selector = '#blazar-calendar-host';
+    chooser_attr = "node_type";
+    chooser_attr_pretty = "Node Type";
     plural_resource_type = "Hosts";
-    task_attr = "node_name";
+    row_attr = "node_name";
     populateChooser = function(chooser, availableResourceTypes){
       var nodeTypesPretty = [ // preserve order so it's not random
         ['compute', 'Compute Node'],
@@ -37,7 +36,6 @@
         ['atom', 'Atom'],
         ['arm64', 'ARM64'],
       ];
-      chooser.append(new Option('All Nodes', '*'));
       nodeTypesPretty.forEach(function(nt) {
         if (availableResourceTypes[nt[0]]) {
           chooser.append(new Option(nt[1], nt[0]));
@@ -45,132 +43,156 @@
         }
       });
     }
-    filterTaskNames = function(resources, nodeType){
-      return resources
-        .filter(function (host) {return nodeType === '*' || nodeType === host.node_type})
-        .map(function (host) {return host.node_name});
-    }
   }
-  if ($('#blazar-gantt-network').length !== 0) {
-    selector = '#blazar-gantt-network'
+  if ($('#blazar-calendar-network').length !== 0) {
+    selector = '#blazar-calendar-network'
     plural_resource_type = "Networks"
-    task_attr = "segment_id";
+    row_attr = "segment_id";
   }
-  if ($('#blazar-gantt-device').length !== 0) {
-    selector = '#blazar-gantt-device'
-    resource_type_attr = "vendor";
-    resource_type_pretty = "Vendor";
-    task_attr = "device_name";
-    populateChooser = function(chooser, availableResourceTypes){
-      chooser.append(new Option('All Vendors', '*'));
-    }
+  if ($('#blazar-calendar-device').length !== 0) {
+    selector = '#blazar-calendar-device'
     plural_resource_type = "Devices"
-    filterTaskNames = function(resources, nodeType){
-      return resources
-        .filter(function (device) {return nodeType === '*' || nodeType === device.vendor})
-        .map(function (device) {return device.device_name});
-    }
+    row_attr = "device_name";
+
+    chooser_attr = "vendor";
+    chooser_attr_pretty = "Vendor";
+    populateChooser = function(chooser, availableResourceTypes){}
   }
   if (selector == undefined) return;
-  var gantt_element = $(selector);
+  var calendar_element = $(selector);
 
   function init() {
-    var gantt;
-    var all_tasks;
-    var tasks;
-    var resources;
+    var chart; // The chart object
+    var all_reservations; // All reservations
+    var filtered_reservations; // Reservations to show based on filter
     var form;
-
-    var format = '%d-%b %H:%M';
-    var taskStatus = {
-      'active': 'task-active',
-      'pending': 'task-pending'
-    };
 
     // Guard against re-running init() and a pointless calendar.json load.
     // Horizon seems to call us twice for some reason
-    if (gantt_element.hasClass("loaded").length > 0) {
+    if (calendar_element.hasClass("loaded").length > 0) {
       console.log('blocking duplicate init');
     }
-    gantt_element.addClass('loaded');
+    calendar_element.addClass('loaded');
 
     $.getJSON("resources.json")
-    .done(function(resp) {
-      all_tasks = resp.reservations.map(function(reservation, i) {
-        reservation.resources = resp.reservations
-          .filter( function(r) { return r.id === reservation.id; })
-          .map(function(r) { return r[task_attr]; });
-
-        return {
-          'startDate': new Date(reservation.start_date),
-          'endDate': new Date(reservation.end_date),
-          'taskName': reservation[task_attr],
-          'status': reservation.status,
-          'data': reservation,
-          'resource_type': plural_resource_type
-        }
-      });
-      tasks = all_tasks;
-      resources = resp.resources;
-
-      // populate node-type-chooser
-      var chooser = $("#resource-type-chooser");
-      if(populateChooser != undefined){
-        $("label[for='resource-type-chooser']").text(resource_type_pretty);
-        var availableResourceTypes = {};
-        resources.forEach(function(resource) {
-            availableResourceTypes[resource[resource_type_attr]] = true;
+      .done(function(resp) {
+        var reservations_with_resources = resp.reservations;
+        reservations_with_resources.forEach( function(reservation) {
+          resp.resources.forEach(function(resource){
+            if(reservation[row_attr] == resource[row_attr]){
+              reservation[chooser_attr] = resource[chooser_attr]
+            }
+          })
         });
-        chooser.empty();
-        populateChooser(chooser, availableResourceTypes)
-        Object.keys(availableResourceTypes).forEach(function (key) {
-          if (availableResourceTypes[key]) {
-            chooser.append(new Option(key, key));
+        var reservations_by_id = {}
+        reservations_with_resources.forEach(function(reservation){
+          if(!(reservation.id in reservations_by_id)){
+            reservations_by_id[reservation.id] = reservation
+            reservation.name = reservation.id
+            reservation.data = []
           }
-        });
-        chooser.prop('disabled', false);
-        chooser.change(function() {
-          var timeDomain = getTimeDomain();
-          var nodeType = $('#resource-type-chooser').val();
-          var filteredTaskNames = filterTaskNames(resources, nodeType);
-          tasks = all_tasks.filter(function(task) {
-            return filteredTaskNames.includes(task.taskName)
+          var new_reservation = {
+            'startDate': new Date(reservation.start_date),
+            'endDate': new Date(reservation.end_date),
+            'x': reservation[row_attr],
+            'y': [
+              new Date(reservation.start_date).getTime(),
+              new Date(reservation.end_date).getTime()
+            ],
+          }
+          new_reservation[chooser_attr] = reservation[chooser_attr]
+          reservations_by_id[reservation.id].data.push(new_reservation)
+        })
+        // Dummy data to force rendering of all resources
+        reservations_by_id["0"] = {"name": "0", "data": []}
+        // For this row shows up at all, we need at least 1 data point.
+        resp.resources.forEach(function(resource){
+          var dummy_data = {x: resource[row_attr], y: [0, 0]}
+          dummy_data[chooser_attr] = resource[chooser_attr]
+          reservations_by_id["0"].data.push(dummy_data)
+        })
+        all_reservations = Object.values(reservations_by_id)
+
+        filtered_reservations = all_reservations;
+
+        // populate resource-type-chooser
+        var chooser = $("#resource-type-chooser");
+        if(populateChooser != undefined){
+          $("label[for='resource-type-chooser']").text(chooser_attr_pretty);
+          var availableResourceTypes = {};
+          resp.resources.forEach(function(resource) {
+              availableResourceTypes[resource[chooser_attr]] = true;
           });
-          construct_gantt(tasks, filteredTaskNames, timeDomain)
-        });
-      } else {
-        chooser.hide()
-      }
-
-      var taskNames = $.map(resp.resources, function(resource, i) {
-        return resource[task_attr];
-      });
-
-      /* set initial time range */
-      var timeDomain = computeTimeDomain(7);
-
-      construct_gantt(tasks, taskNames, timeDomain)
+          chooser.empty();
+          chooser.append(new Option(`All ${plural_resource_type}`, '*'));
+          populateChooser(chooser, availableResourceTypes)
+          Object.keys(availableResourceTypes).forEach(function (key) {
+            chooser.append(new Option(key, key));
+          });
+          chooser.prop('disabled', false);
+          chooser.change(function() {
+            var chosen_type = $('#resource-type-chooser').val();
+            filtered_reservations = all_reservations.map(function (reservation) {
+              var reservation_copy = Object.assign({}, reservation)
+              reservation_copy.data = reservation.data.filter(function(resource){
+                return chosen_type === '*' || chosen_type === resource[chooser_attr];
+              })
+              return reservation_copy
+            })
+            chart.updateOptions({series: filtered_reservations})
+            setTimeDomain(getTimeDomain())
+          });
+        } else {
+          chooser.hide()
+        }
+        construct_calendar(filtered_reservations, computeTimeDomain(7))
     })
     .fail(function() {
-      gantt_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
+      calendar_element.html('<div class="alert alert-danger">Unable to load reservations.</div>');
     });
 
-    function construct_gantt(tasks, taskNames, timeDomain){
-      gantt_element.empty().height(20 * taskNames.length);
-      gantt = d3.gantt({
-        selector: selector,
-        taskTypes: taskNames,
-        taskStatus: taskStatus,
-        tickFormat: format,
-        timeDomainStart: timeDomain[0],
-        timeDomainEnd: timeDomain[1]
-      });
-      gantt(tasks);
-      setTimeDomain(timeDomain);
+    function construct_calendar(tasks, timeDomain){
+      calendar_element.empty().height(20 * tasks.length);
+      var options = {
+        series: tasks,
+        chart: {
+          type: 'rangeBar',
+          toolbar: {show: false},
+          zoom: {enabled: false, type: 'xy'},
+        },
+        plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
+        xaxis: { type: 'datetime' },
+        legend: { show: false },
+        tooltip: {
+          custom: function({series, seriesIndex, dataPointIndex, w}) {
+            var datum = tasks[seriesIndex]
+            var resources_reserved = datum.data.map(function(el){ return el.x }).join("<br>")
+            return `<div class='tooltip-content'><dl>
+              <dt>Project</dt>
+                <dd>${datum.project_id}</dd>
+              <dt>${plural_resource_type}</dt>
+                <dd>${resources_reserved}</dd>
+              <dt>Reserved</dt>
+                <dd>${datum.start_date} <strong>to</strong> ${datum.end_date}</dd>
+            </dl></div>`
+          }
+        },
+        annotations: {
+          xaxis: [
+            {
+              x: new Date().getTime(),
+              borderColor: '#00E396',
+            }
+          ]
+        }
+      }
+      chart = new ApexCharts(document.querySelector(selector), options);
+      chart.render();
+      setTimeDomain(timeDomain); // Also sets the yaxis limits
     }
 
     function computeTimeDomain(days) {
-      var padFraction = 1/8; // gantt chart default is 3 hours for 1 day
+      var padFraction = 1/8; // chart default is 3 hours for 1 day
       return [
         d3.time.day.offset(Date.now(), -days * padFraction),
         d3.time.day.offset(Date.now(), days * (1 + padFraction))
@@ -178,12 +200,18 @@
     }
 
     function setTimeDomain(timeDomain) {
+      // Set the input elements
       form.removeClass('time-domain-processed');
       $('#dateStart').datepicker('setDate', timeDomain[0]);
       $('#timeStartHours').val(timeDomain[0].getHours());
       $('#dateEnd').datepicker('setDate', timeDomain[1]);
       $('#timeEndHours').val(timeDomain[1].getHours());
       form.addClass('time-domain-processed');
+      // If the chart exists, update its axis
+      if(chart){
+        var options = { yaxis: {min: timeDomain[0].getTime(), max: timeDomain[1].getTime()}}
+        chart.updateOptions(options)
+      }
     }
 
     function getTimeDomain() {
@@ -200,62 +228,28 @@
       return timeDomain;
     }
 
-    function redraw() {
-      if (gantt && tasks) {
-        gantt.redraw(tasks);
-      }
-    }
-
-    $(window).on('resize', redraw);
-
-    form = $('form[name="blazar-gantt-controls"]');
+    form = $('form[name="blazar-calendar-controls"]');
 
     $('input[data-datepicker]', form).datepicker({
       dateFormat: 'mm/dd/yyyy'
     });
 
-    $('#node-type-chooser').change(function() {
-      var timeDomain = getTimeDomain();
-      var nodeType = $('#node-type-chooser').val();
-
-      var filteredTaskNames = filterTaskNames(resources);
-
-      tasks = all_tasks.filter(function(task) {
-        return filteredTaskNames.indexOf(task.taskName) >= 0
-      });
-
-      gantt_element.empty().height(20 * filteredTaskNames.length);
-      gantt = d3.gantt({
-        selector: selector,
-        taskTypes: filteredTaskNames,
-        taskStatus: taskStatus,
-        tickFormat: format,
-        timeDomainStart: timeDomain[0],
-        timeDomainEnd: timeDomain[1],
-      });
-      console.log(tasks)
-      gantt(tasks);
-    });
-
     $('input', form).on('change', function() {
       if (form.hasClass('time-domain-processed')) {
         var timeDomain = getTimeDomain();
+        // If invalid ordering is chosen, set period to 1 day
         if (timeDomain[0] >= timeDomain[1]) {
           timeDomain[1] = d3.time.day.offset(timeDomain[0], +1);
-          setTimeDomain(timeDomain);
         }
-        gantt.timeDomain(timeDomain);
-        redraw();
+        setTimeDomain(timeDomain);
       }
     });
 
-    $('.gantt-quickdays').click(function() {
-      var days = parseInt($(this).data("gantt-days"));
+    $('.calendar-quickdays').click(function() {
+      var days = parseInt($(this).data("calendar-days"));
       if (!isNaN(days)) {
         var timeDomain = computeTimeDomain(days);
         setTimeDomain(timeDomain);
-        gantt.timeDomain(timeDomain);
-        redraw();
       }
     });
   }

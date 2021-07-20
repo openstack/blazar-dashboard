@@ -28,5 +28,6 @@ ADD_SCSS_FILES = [
 ADD_JS_FILES = [
     'leases/js/vendor/d3.gantt.js',
     'leases/js/lease_gantt.js',
-    'leases/js/extra_capability_widget.js'
+    'leases/js/extra_capability_widget.js',
+    'leases/js/vendor/apexcharts.min.js'
 ]
