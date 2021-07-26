@@ -1,4 +1,4 @@
-function capabilitiesjs(resource_type) {
+function capabilitiesjs(resource_type, switchable_classname) {
     'use strict';
     
     var defaults = {'computehost': {'node_type': 'compute_haswell'},
@@ -37,6 +37,9 @@ function capabilitiesjs(resource_type) {
             setDefaultCapabilityValue();
 
         }
+        // braodcase event
+        var capability_loaded = new Event(resource_type + '_capability_loaded');
+        document.dispatchEvent(capability_loaded);
     };
     xhr.open('GET', resource_type + '/extras.json', true);
     xhr.send();
@@ -79,17 +82,17 @@ function capabilitiesjs(resource_type) {
                 '<option disabled selected></option>' + // blank...select something else.
             '</select> ' +
             '<select class="form-control cri-equality">' +
-                '<option value="eq">=</option>' +
-                '<option value="lt">&lt;</option>' +
-                '<option value="le">&le;</option>' +
-                '<option value="gt">&gt;</option>' +
-                '<option value="ge">&ge;</option>' +
-                '<option value="ne">&ne;</option>' +
+                '<option value="eq" class=' + switchable_classname + '>=</option>' +
+                '<option value="lt" class=' + switchable_classname + '>&lt;</option>' +
+                '<option value="le" class=' + switchable_classname + '>&le;</option>' +
+                '<option value="gt" class=' + switchable_classname + '>&gt;</option>' +
+                '<option value="ge" class=' + switchable_classname + '>&ge;</option>' +
+                '<option value="ne" class=' + switchable_classname + '>&ne;</option>' +
             '</select> '+
-            '<select id="resource-{{ widget.resource_type }}" class="form-control cri-val">' +
+            '<select id="resource-' + resource_type + '" class="form-control cri-val">' +
                 '<option disabled selected></option>' +
             '</select> ' +
-            '<button class="btn btn-xs btn-danger cri-rm">X</button>';
+            '<button class="btn btn-xs btn-danger cri-rm ' + switchable_classname + '">X</button>';
 
         var index = criteriaCounter;
         criteriaCounter = criteriaCounter + 1;
@@ -98,7 +101,9 @@ function capabilitiesjs(resource_type) {
         name_selector.id = 'criteria-' + resource_type + '-id-' + index;
         name_selector.name = 'criteria-' + resource_type + '-name-' + index;
         capabilityNames.forEach(function(cn) {
-            name_selector.appendChild(new Option(cn, cn));
+            var opt = new Option(cn, cn);
+            opt.className = switchable_classname;
+            name_selector.appendChild(opt);
         });
         name_selector.addEventListener('change', changeCriterionName, false);
 
@@ -140,7 +145,9 @@ function capabilitiesjs(resource_type) {
         var values = capabilityValues[name];
         values.sort();
         values.forEach(function(cv) {
-            element.appendChild(new Option(cv, cv));
+            var opt = new Option(cv, cv);
+            opt.className = switchable_classname;
+            element.appendChild(opt);
         });
         setResourcePropertyValues(element.id.slice(-1));
     }
