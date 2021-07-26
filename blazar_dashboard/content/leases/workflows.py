@@ -169,12 +169,6 @@ class SetGeneralAction(workflows.Action):
         if cleaned_data['start_date'] >= cleaned_data['end_date']:
             raise forms.ValidationError("Start date must be before end")
 
-        # precheck for name conflicts
-        leases = api.client.lease_list(self.request)
-        if cleaned_data['name'] in {lease['name'] for lease in leases}:
-            raise forms.ValidationError(
-                "A lease with this name already exists.")
-
         return cleaned_data
 
     def prepare_datetimes(self, date_val, time_val):
@@ -239,33 +233,21 @@ class SetHostsAction(workflows.Action):
                               "_host_help.html")
 
     def clean(self):
-        start_date = self.initial.get('start_date')
-        end_date = self.initial.get('end_date')
         cleaned_data = super(SetHostsAction, self).clean()
+
+        if not (cleaned_data.get('with_computehost') and
+                cleaned_data.get('min_hosts')):
+            return cleaned_data
+
         if (cleaned_data['min_hosts'] == 0 or cleaned_data['max_hosts'] == 0):
             raise forms.ValidationError(
                 "No host is reserved! "
                 "Clear \"Reserve Hosts\" checkbox "
                 "if you don't need host resources.")
 
-        if (cleaned_data['min_hosts'] and
-            cleaned_data['max_hosts'] and
-                cleaned_data['min_hosts'] > cleaned_data['max_hosts']):
+        if (cleaned_data['min_hosts'] > cleaned_data['max_hosts']):
             raise forms.ValidationError(
                 "Max hosts is less than min hosts!")
-
-        num_hosts = api.client.compute_host_available(
-            self.request,
-            start_date,
-            end_date)
-        if (cleaned_data['min_hosts'] and
-                cleaned_data['min_hosts'] > num_hosts):
-            raise forms.ValidationError(_(
-                "Not enough hosts are available for this reservation "
-                "(minimum %s requested; %s available). Try adjusting "
-                "the number of hosts requested or the date range "
-                "for the reservation.")
-                % (cleaned_data['min_hosts'], num_hosts))
 
         return cleaned_data
 
@@ -351,16 +333,12 @@ class SetNetworksAction(workflows.Action):
 
         return super().get_help_text(extra)
 
-    def _remove_fields_errors(self):
-        self._errors = {}
-
     def clean(self):
-        with_network = self.initial.get('with_network')
-        if not with_network:
-            self._remove_fields_errors()
-            return None
-
         cleaned_data = super(SetNetworksAction, self).clean()
+
+        if not cleaned_data.get('with_network'):
+            return cleaned_data
+
         if (not cleaned_data.get('network_name') and
                 cleaned_data.get('network_ip_count', 0) == 0):
             raise forms.ValidationError(
@@ -420,19 +398,15 @@ class SetDevicesAction(workflows.Action):
     class Meta(object):
         name = _("Devices")
 
-    def _remove_fields_errors(self):
-        self._errors = {}
-
     def clean(self):
-        with_device = self.initial.get('with_device')
-        if not with_device:
-            self._remove_fields_errors()
-            return None
-        start_date = self.initial.get('start_date')
-        end_date = self.initial.get('end_date')
-
         cleaned_data = super(SetDevicesAction, self).clean()
-        if (cleaned_data['min_devices'] == 0 or cleaned_data['max_devices'] == 0):
+
+        if (not cleaned_data.get('with_device') or
+                not cleaned_data.get('min_devices')):
+            return cleaned_data
+
+        if (cleaned_data['min_devices'] == 0 or
+                cleaned_data['max_devices'] == 0):
             raise forms.ValidationError(
                 "No device is reserved! "
                 "Clear \"Reserve Devices\" checkbox "
@@ -441,18 +415,6 @@ class SetDevicesAction(workflows.Action):
         if (cleaned_data['min_devices'] > cleaned_data['max_devices']):
             raise forms.ValidationError(
                 "Max devices is less than min devices!")
-
-        num_devices = api.client.device_available(
-            self.request,
-            start_date,
-            end_date)
-        if (cleaned_data['min_devices'] > num_devices):
-            raise forms.ValidationError(_(
-                "Not enough devices are available for this reservation "
-                "(minimum %s requested; %s available). Try adjusting "
-                "the number of hosts requested or the date range "
-                "for the reservation.")
-                % (cleaned_data['min_devices'], num_devices))
 
         return cleaned_data
 
@@ -483,11 +445,55 @@ class CreateLease(workflows.Workflow):
         return message % self.context.get('name')
 
     def is_valid(self):
-        if (not self.context.get('with_computehost', False) and
-            not self.context.get('with_network', False) and
-            not self.context.get('with_floatingip', False) and
-                not self.context.get('with_device', False)):
+        try:
+            # check for name conflicts
+            leases = api.client.lease_list(self.request)
+            if self.context.get('name') in {lease['name'] for lease in leases}:
+                raise forms.ValidationError(
+                    "A lease with this name already exists.")
+
+            # check if any resource is reserved
+            if (not self.context.get('with_computehost', False) and
+                not self.context.get('with_network', False) and
+                not self.context.get('with_floatingip', False) and
+                    not self.context.get('with_device', False)):
+                raise forms.ValidationError(
+                    'Please specify at least one reservation')
+
+            # check if there is enough hosts
+            if self.context.get('with_computehost', False):
+                num_hosts = api.client.compute_host_available(
+                    self.request,
+                    self.context.get('start_date'),
+                    self.context.get('end_date'))
+                if (self.context.get('min_hosts') > num_hosts):
+                    raise forms.ValidationError(_(
+                        "Not enough hosts are available for this reservation "
+                        "(minimum %s requested; %s available). Try adjusting "
+                        "the number of hosts requested or the date range "
+                        "for the reservation.")
+                        % (self.context.get('min_hosts'), num_hosts))
+
+            # check if there is enough devices
+            if self.context.get('with_device', False):
+                num_devices = api.client.device_available(
+                    self.request,
+                    self.context.get('start_date'),
+                    self.context.get('end_date'))
+                if (self.context.get('min_devices') > num_devices):
+                    raise forms.ValidationError(_(
+                        "Not enough devices are available for this reservation "
+                        "(minimum %s requested; %s available). Try adjusting "
+                        "the number of hosts requested or the date range "
+                        "for the reservation.")
+                        % (self.context.get('min_devices'), num_devices))
+
+        except Exception as e:
+            exceptions.handle(self.request,
+                              message=str(e).strip("['']"),
+                              details=_("Please update and try again!"))
             return False
+
         return super(CreateLease, self).is_valid()
 
     def handle(self, request, data):
