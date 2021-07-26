@@ -47,23 +47,26 @@ class IndexView(tables.DataTableView):
 class CalendarView(views.APIView):
     template_name = 'project/leases/calendar.html'
 
+    titles = {
+        "host": _("Host Calendar"),
+        "network": _("Network Calendar"),
+        "device": _("Device Calendar"),
+    }
 
-def calendar_data_view(request):
+    def get_data(self, request, context, *args, **kwargs):
+        context["calendar_title"] = self.titles[context["resource_type"]]
+        return context
+
+
+def calendar_data_view(request, resource_type):
+    api_mapping = {
+        "host": api.client.reservation_calendar,
+        "network": api.client.network_reservation_calendar,
+        "device": api.client.device_reservation_calendar
+    }
     data = {}
-    compute_hosts, reservations = api.client.reservation_calendar(request)
-    data['compute_hosts'] = compute_hosts
-    data['reservations'] = reservations
-    return JsonResponse(data)
-
-
-class NetworkCalendarView(views.APIView):
-    template_name = 'project/leases/network_calendar.html'
-
-
-def network_calendar_data_view(request):
-    data = {}
-    networks, reservations = api.client.network_reservation_calendar(request)
-    data['networks'] = networks
+    resources, reservations = api_mapping[resource_type](request)
+    data['resources'] = resources
     data['reservations'] = reservations
     return JsonResponse(data)
 
@@ -81,18 +84,6 @@ def extra_capabilities(request, resource_type):
             request)
     data = {
         'extra_capabilities': extra_capabilities}
-    return JsonResponse(data)
-
-
-class DeviceCalendarView(views.APIView):
-    template_name = 'project/leases/device_calendar.html'
-
-
-def device_calendar_data_view(request):
-    data = {}
-    devices, reservations = api.client.device_reservation_calendar(request)
-    data['devices'] = devices
-    data['reservations'] = reservations
     return JsonResponse(data)
 
 

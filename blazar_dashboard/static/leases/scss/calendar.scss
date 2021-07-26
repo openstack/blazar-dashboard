@@ -1,34 +1,14 @@
-#blazar-gantt {
+.blazar-calendar {
   width: 100%;
   min-height: 800px;
   position: relative;
 }
 
-#blazar-gantt .chart {
+.blazar-calendar .chart {
   width: inherit;
 }
 
-#blazar-gantt-network {
-  width: 100%;
-  min-height: 800px;
-  position: relative;
-}
-
-#blazar-gantt-network .chart {
-  width: inherit;
-}
-
-#blazar-gantt-device {
-  width: 100%;
-  min-height: 800px;
-  position: relative;
-}
-
-#blazar-gantt-device .chart {
-  width: inherit;
-}
-
-.tooltip {
+.apexcharts-tooltip {
   position: absolute;
   top: 0;
   left: 0;
@@ -39,24 +19,24 @@
 .tooltip-content {
   box-sizing: border-box;
   background-color: #eee;
-  border: 1px solid #ccc;
+  border-color: #ccc;
   padding: 3px;
 }
 
-rect.task {
+.apexcharts-series {
   opacity: 0.9;
 }
 
-rect.task-hover {
+.apexcharts-series.apexcharts-active {
   stroke: yellow;
 }
 
-line.time-now {
+.apexcharts-xaxis-annotations line {
   stroke: #A8DE52;
   stroke-width: 3;
 }
 
-.grid .tick {
+.apexcharts-yaxis-label {
   stroke: rgba(#000, 0.25);
 }
 
@@ -68,14 +48,14 @@ line.time-now {
   shape-rendering: crispEdges;
 }
 
-.gantt-group {
+.calendar-group {
   margin: 5px;
 }
 
-.form-control.gantt-datebox-date {
+.form-control.calendar-datebox-date {
   width: 120px;
 }
 
-.form-control.gantt-datebox-hour {
+.form-control.calendar-datebox-hour {
   width: 55px;
 }

@@ -53,11 +53,11 @@ class UpdateLease(tables.LinkAction):
         return False
 
 
-class ViewLeaseCalendar(tables.LinkAction):
+class ViewHostReservationCalendar(tables.LinkAction):
     # TODO(nicktimko) move calendar to a panel
     name = "calendar"
     verbose_name = _("Host Calendar")
-    url = "horizon:project:leases:calendar"
+    url = "calendar/host/"
     classes = ("btn-default", )
     icon = "calendar"
 
@@ -65,7 +65,7 @@ class ViewLeaseCalendar(tables.LinkAction):
 class ViewNetworkReservationCalendar(tables.LinkAction):
     name = "network_calendar"
     verbose_name = _("Network Calendar")
-    url = "horizon:project:leases:network_calendar"
+    url = "calendar/network/"
     classes = ("btn-default", )
     icon = "calendar"
 
@@ -73,7 +73,7 @@ class ViewNetworkReservationCalendar(tables.LinkAction):
 class ViewDeviceReservationCalendar(tables.LinkAction):
     name = "device_calendar"
     verbose_name = _("Device Calendar")
-    url = "horizon:project:leases:device_calendar"
+    url = "calendar/device/"
     classes = ("btn-default", )
     icon = "calendar"
 
@@ -131,7 +131,7 @@ class LeasesTable(tables.DataTable):
         if conf.network_reservation.get('enabled'):
             table_actions.insert(0, ViewNetworkReservationCalendar)
         if conf.host_reservation.get('enabled'):
-            table_actions.insert(0, ViewLeaseCalendar)
+            table_actions.insert(0, ViewHostReservationCalendar)
         if conf.device_reservation.get('enabled'):
             table_actions.insert(0, ViewDeviceReservationCalendar)
 

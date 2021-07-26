@@ -26,12 +26,8 @@ ADD_SCSS_FILES = [
 ]
 
 ADD_JS_FILES = [
-    'leases/js/vendor/d3.gantt.js',
-    'leases/js/vendor/d3.gantt.network.js',
-    'leases/js/vendor/d3.gantt.device.js',
-    'leases/js/calendar/lease_gantt.js',
-    'leases/js/calendar/network_gantt.js',
-    'leases/js/calendar/device_gantt.js',
+    'leases/js/calendar/lease_chart.js',
+    'leases/js/vendor/apexcharts.min.js',
     'leases/js/create_lease/extra_capability_widget.js',
     'leases/js/create_lease/workflow.js',
 ]

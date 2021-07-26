@@ -19,19 +19,9 @@ from django.conf.urls import url
 LEASE_URL = r'^(?P<lease_id>[^/]+)/%s$'
 
 urlpatterns = [
-    url(r'^calendar/$', leases_views.CalendarView.as_view(), name='calendar'),
-    url(r'^calendar\.json$', leases_views.calendar_data_view,
+    url(r'^calendar/(?P<resource_type>(host|device|network))/$', leases_views.CalendarView.as_view(), name='calendar'),
+    url(r'^calendar/(?P<resource_type>(host|device|network))/resources\.json$', leases_views.calendar_data_view,
         name='calendar_data'),
-
-    url(r'^network_calendar/$', leases_views.NetworkCalendarView.as_view(),
-        name='network_calendar'),
-    url(r'^network_calendar\.json$', leases_views.network_calendar_data_view,
-        name='network_calendar_data'),
-
-    url(r'^device_calendar/$', leases_views.DeviceCalendarView.as_view(),
-        name='device_calendar'),
-    url(r'^device_calendar\.json$', leases_views.device_calendar_data_view,
-        name='device_calendar_data'),
 
     url(r'^(?P<resource_type>[^/]+)/extras\.json$',
         leases_views.extra_capabilities,

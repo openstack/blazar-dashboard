@@ -2,11 +2,7 @@
 {% extends 'horizon/_scripts.html' %}
 
 {% block custom_js_files %}
-  <script src='{{ STATIC_URL }}leases/js/vendor/d3.gantt.js' type='text/javascript' charset='utf-8'></script>
-  <script src='{{ STATIC_URL }}leases/js/vendor/d3.gantt.network.js' type='text/javascript' charset='utf-8'></script>
-  <script src='{{ STATIC_URL }}leases/js/vendor/d3.gantt.device.js' type='text/javascript' charset='utf-8'></script>
-  <script src='{{ STATIC_URL }}leases/js/calendar/lease_gantt.js' type='text/javascript' charset='utf-8'></script>
-  <script src='{{ STATIC_URL }}leases/js/calendar/network_gantt.js' type='text/javascript' charset='utf-8'></script>
-  <script src='{{ STATIC_URL }}leases/js/calendar/device_gantt.js' type='text/javascript' charset='utf-8'></script>
+  <script src='{{ STATIC_URL }}leases/js/vendor/apexcharts.min.js' type='text/javascript' charset='utf-8'></script>
+  <script src='{{ STATIC_URL }}leases/js/calendar/lease_chart.js' type='text/javascript' charset='utf-8'></script>
   <script src='{{ STATIC_URL }}leases/js/create_lease/extra_capability_widget.js' type='text/javascript' charset='utf-8'></script>
 {% endblock %}
