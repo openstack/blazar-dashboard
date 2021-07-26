@@ -1,20 +1,20 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
-  var selector = undefined; // what selector determines the calendar_element
-  var row_attr = undefined; // what attribute from resources.json labels each chart row
-  var plural_resource_type = undefined; // This resource type plural display name
+  var selector = undefined; // what selector determines the calendarElement
+  var rowAttr = undefined; // what attribute from resources.json labels each chart row
+  var pluralResourceType = undefined; // This resource type plural display name
 
   // Used for the chooser filter. Leave undefined for no filter
-  var chooser_attr = undefined; // what attribute from resources.json should be used to categorize resources
-  var chooser_attr_pretty = undefined; // display name for chooser_attr
+  var chooserAttr = undefined; // what attribute from resources.json should be used to categorize resources
+  var chooserAttrPretty = undefined; // display name for chooserAttr
   var populateChooser = undefined; // a function that (partially) fills the resource category filter
   if ($('#blazar-calendar-host').length !== 0) {
     selector = '#blazar-calendar-host';
-    row_attr = "node_name";
-    plural_resource_type = gettext("Hosts");
-    chooser_attr = "node_type";
-    chooser_attr_pretty = gettext("Node Type");
+    rowAttr = "node_name";
+    pluralResourceType = gettext("Hosts");
+    chooserAttr = "node_type";
+    chooserAttrPretty = gettext("Node Type");
     populateChooser = function(chooser, availableResourceTypes){
       var nodeTypesPretty = [ // preserve order so it's not random
         ['compute', gettext('Compute Node')],
@@ -46,115 +46,115 @@
   }
   if ($('#blazar-calendar-network').length !== 0) {
     selector = '#blazar-calendar-network'
-    plural_resource_type = gettext("Networks")
-    row_attr = "segment_id";
+    pluralResourceType = gettext("Networks")
+    rowAttr = "segment_id";
   }
   if ($('#blazar-calendar-device').length !== 0) {
     selector = '#blazar-calendar-device'
-    plural_resource_type = gettext("Devices")
-    row_attr = "device_name";
+    pluralResourceType = gettext("Devices")
+    rowAttr = "device_name";
 
-    chooser_attr = "vendor";
-    chooser_attr_pretty = gettext("Vendor");
+    chooserAttr = "vendor";
+    chooserAttrPretty = gettext("Vendor");
     populateChooser = function(chooser, availableResourceTypes){}
   }
   if (selector == undefined) return;
-  var calendar_element = $(selector);
+  var calendarElement = $(selector);
 
   function init() {
     var chart; // The chart object
-    var all_reservations;
-    var filtered_reservations; // Reservations to show based on filter
+    var allReservations;
+    var filteredReservations; // Reservations to show based on filter
     var form;
     var resources; // Used to calculate the height of the chart
 
     // Guard against re-running init() and a pointless calendar.json load.
     // Horizon seems to call us twice for some reason
-    if (calendar_element.hasClass("loaded").length > 0) {
+    if (calendarElement.hasClass("loaded").length > 0) {
       console.log('blocking duplicate init');
     }
-    calendar_element.addClass('loaded');
+    calendarElement.addClass('loaded');
 
     $.getJSON("resources.json")
       .done(function(resp) {
         resources = resp.resources;
-        var reservations_with_resources = resp.reservations;
-        reservations_with_resources.forEach( function(reservation) {
+        var reservationsWithResources = resp.reservations;
+        reservationsWithResources.forEach( function(reservation) {
           resp.resources.forEach(function(resource){
-            if(reservation[row_attr] == resource[row_attr]){
-              reservation[chooser_attr] = resource[chooser_attr]
+            if(reservation[rowAttr] == resource[rowAttr]){
+              reservation[chooserAttr] = resource[chooserAttr]
             }
           })
         });
-        var reservations_by_id = {}
-        reservations_with_resources.forEach(function(reservation){
-          if(!(reservation.id in reservations_by_id)){
-            reservations_by_id[reservation.id] = reservation
+        var reservationsById = {}
+        reservationsWithResources.forEach(function(reservation){
+          if(!(reservation.id in reservationsById)){
+            reservationsById[reservation.id] = reservation
             reservation.name = reservation.id
             reservation.data = []
           }
-          var new_reservation = {
-            'startDate': new Date(reservation.start_date),
-            'endDate': new Date(reservation.end_date),
-            'x': reservation[row_attr],
+          var newReservation = {
+            'start_date': new Date(reservation.start_date),
+            'end_date': new Date(reservation.end_date),
+            'x': reservation[rowAttr],
             'y': [
               new Date(reservation.start_date).getTime(),
               new Date(reservation.end_date).getTime()
             ],
           }
-          new_reservation[chooser_attr] = reservation[chooser_attr]
-          reservations_by_id[reservation.id].data.push(new_reservation)
+          newReservation[chooserAttr] = reservation[chooserAttr]
+          reservationsById[reservation.id].data.push(newReservation)
         })
         // Dummy data to force rendering of all resources
-        reservations_by_id["0"] = {"name": "0", "data": []}
+        reservationsById["0"] = {"name": "0", "data": []}
         // For this row shows up at all, we need at least 1 data point.
         resp.resources.forEach(function(resource){
-          var dummy_data = {x: resource[row_attr], y: [0, 0]}
-          dummy_data[chooser_attr] = resource[chooser_attr]
-          reservations_by_id["0"].data.push(dummy_data)
+          var dummyData = {x: resource[rowAttr], y: [0, 0]}
+          dummyData[chooserAttr] = resource[chooserAttr]
+          reservationsById["0"].data.push(dummyData)
         })
-        all_reservations = Object.values(reservations_by_id)
+        allReservations = Object.values(reservationsById)
 
-        filtered_reservations = all_reservations;
+        filteredReservations = allReservations;
 
         // populate resource-type-chooser
         var chooser = $("#resource-type-chooser");
         if(populateChooser != undefined){
-          $("label[for='resource-type-chooser']").text(chooser_attr_pretty);
+          $("label[for='resource-type-chooser']").text(chooserAttrPretty);
           var availableResourceTypes = {};
           resp.resources.forEach(function(resource) {
-              availableResourceTypes[resource[chooser_attr]] = true;
+              availableResourceTypes[resource[chooserAttr]] = true;
           });
           chooser.empty();
-          chooser.append(new Option(`${gettext("All")} ${plural_resource_type}`, '*'));
+          chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
           populateChooser(chooser, availableResourceTypes)
           Object.keys(availableResourceTypes).forEach(function (key) {
             chooser.append(new Option(key, key));
           });
           chooser.prop('disabled', false);
           chooser.change(function() {
-            var chosen_type = $('#resource-type-chooser').val();
-            filtered_reservations = all_reservations.map(function (reservation) {
-              var reservation_copy = Object.assign({}, reservation)
-              reservation_copy.data = reservation.data.filter(function(resource){
-                return chosen_type === '*' || chosen_type === resource[chooser_attr];
+            var chosenType = $('#resource-type-chooser').val();
+            filteredReservations = allReservations.map(function (reservation) {
+              var reservationCopy = Object.assign({}, reservation)
+              reservationCopy.data = reservation.data.filter(function(resource){
+                return chosenType === '*' || chosenType === resource[chooserAttr];
               })
-              return reservation_copy
+              return reservationCopy
             })
-            chart.updateOptions({series: filtered_reservations})
+            chart.updateOptions({series: filteredReservations})
             setTimeDomain(getTimeDomain())
           });
         } else {
           chooser.hide()
         }
-        construct_calendar(filtered_reservations, computeTimeDomain(7))
+        constructCalendar(filteredReservations, computeTimeDomain(7))
     })
     .fail(function() {
-      calendar_element.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
+      calendarElement.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
     });
 
-    function construct_calendar(rows, timeDomain){
-      calendar_element.empty();
+    function constructCalendar(rows, timeDomain){
+      calendarElement.empty();
       var options = {
         series: rows,
         chart: {
@@ -170,12 +170,12 @@
         tooltip: {
           custom: function({series, seriesIndex, dataPointIndex, w}) {
             var datum = rows[seriesIndex]
-            var resources_reserved = datum.data.map(function(el){ return el.x }).join("<br>")
+            var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>")
             return `<div class='tooltip-content'><dl>
               <dt>${gettext("Project")}</dt>
                 <dd>${datum.project_id}</dd>
-              <dt>${plural_resource_type}</dt>
-                <dd>${resources_reserved}</dd>
+              <dt>${pluralResourceType}</dt>
+                <dd>${resourcesReserved}</dd>
               <dt>${gettext("Reserved")}</dt>
                 <dd>${datum.start_date} <strong>${gettext("to")}</strong> ${datum.end_date}</dd>
             </dl></div>`
