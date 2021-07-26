@@ -16,11 +16,15 @@
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
-.tooltip-content {
+.tooltip-content, #authorized-project-tooltip {
   box-sizing: border-box;
   background-color: #eee;
   border-color: #ccc;
   padding: 3px;
+}
+
+#authorized-project-tooltip {
+  max-width: 300px;
 }
 
 .apexcharts-series {

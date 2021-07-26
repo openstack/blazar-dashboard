@@ -77,77 +77,90 @@
 
     $.getJSON("resources.json")
       .done(function(resp) {
-        resources = resp.resources;
-        var reservations_with_resources = resp.reservations;
-        reservations_with_resources.forEach( function(reservation) {
-          resp.resources.forEach(function(resource){
-            if(reservation[row_attr] == resource[row_attr]){
-              reservation[chooser_attr] = resource[chooser_attr]
-            }
-          })
-        });
-        var reservations_by_id = {}
-        reservations_with_resources.forEach(function(reservation){
-          if(!(reservation.id in reservations_by_id)){
-            reservations_by_id[reservation.id] = reservation
-            reservation.name = reservation.id
-            reservation.data = []
-          }
-          var new_reservation = {
-            'startDate': new Date(reservation.start_date),
-            'endDate': new Date(reservation.end_date),
-            'x': reservation[row_attr],
-            'y': [
-              new Date(reservation.start_date).getTime(),
-              new Date(reservation.end_date).getTime()
-            ],
-          }
-          new_reservation[chooser_attr] = reservation[chooser_attr]
-          reservations_by_id[reservation.id].data.push(new_reservation)
-        })
-        // Dummy data to force rendering of all resources
-        reservations_by_id["0"] = {"name": "0", "data": []}
-        // For this row shows up at all, we need at least 1 data point.
-        resp.resources.forEach(function(resource){
-          var dummy_data = {x: resource[row_attr], y: [0, 0]}
-          dummy_data[chooser_attr] = resource[chooser_attr]
-          reservations_by_id["0"].data.push(dummy_data)
-        })
-        all_reservations = Object.values(reservations_by_id)
-
-        filtered_reservations = all_reservations;
-
-        // populate resource-type-chooser
-        var chooser = $("#resource-type-chooser");
-        if(populateChooser != undefined){
-          $("label[for='resource-type-chooser']").text(chooser_attr_pretty);
-          var availableResourceTypes = {};
-          resp.resources.forEach(function(resource) {
-              availableResourceTypes[resource[chooser_attr]] = true;
-          });
-          chooser.empty();
-          chooser.append(new Option(`${gettext("All")} ${plural_resource_type}`, '*'));
-          populateChooser(chooser, availableResourceTypes)
-          Object.keys(availableResourceTypes).forEach(function (key) {
-            chooser.append(new Option(key, key));
-          });
-          chooser.prop('disabled', false);
-          chooser.change(function() {
-            var chosen_type = $('#resource-type-chooser').val();
-            filtered_reservations = all_reservations.map(function (reservation) {
-              var reservation_copy = Object.assign({}, reservation)
-              reservation_copy.data = reservation.data.filter(function(resource){
-                return chosen_type === '*' || chosen_type === resource[chooser_attr];
+        var parts = window.location.pathname.split("/");
+        var calendar_index = parts.indexOf("calendar");
+        var resource_type = parts[calendar_index+1];
+        $.getJSON(`../../${resource_type}/extras.json`)
+          .done(function(extras_resp) {
+            resources = resp.resources;
+            var reservations_with_resources = resp.reservations;
+            reservations_with_resources.forEach( function(reservation) {
+              resp.resources.forEach(function(resource){
+                if(reservation[row_attr] == resource[row_attr]){
+                  reservation[chooser_attr] = resource[chooser_attr]
+                }
               })
-              return reservation_copy
+            });
+            var reservations_by_id = {}
+            reservations_with_resources.forEach(function(reservation){
+              if(!(reservation.id in reservations_by_id)){
+                reservations_by_id[reservation.id] = reservation
+                reservation.name = reservation.id
+                reservation.data = []
+              }
+              var new_reservation = {
+                'startDate': new Date(reservation.start_date),
+                'endDate': new Date(reservation.end_date),
+                'x': reservation[row_attr],
+                'y': [
+                  new Date(reservation.start_date).getTime(),
+                  new Date(reservation.end_date).getTime()
+                ],
+              }
+              new_reservation[chooser_attr] = reservation[chooser_attr]
+              reservations_by_id[reservation.id].data.push(new_reservation)
             })
-            chart.updateOptions({series: filtered_reservations})
-            setTimeDomain(getTimeDomain())
-          });
-        } else {
-          chooser.hide()
-        }
-        construct_calendar(filtered_reservations, computeTimeDomain(7))
+            // Dummy data to force rendering of all resources
+            reservations_by_id["0"] = {"name": "0", "data": []}
+            // For this row shows up at all, we need at least 1 data point.
+            resp.resources.forEach(function(resource){
+              var dummy_data = {x: resource[row_attr], y: [0, 0]}
+              dummy_data[chooser_attr] = resource[chooser_attr]
+              reservations_by_id["0"].data.push(dummy_data)
+            })
+            all_reservations = Object.values(reservations_by_id)
+
+            filtered_reservations = all_reservations;
+
+            // populate resource-type-chooser
+            var chooser = $("#resource-type-chooser");
+            if(populateChooser != undefined){
+              $("label[for='resource-type-chooser']").text(chooser_attr_pretty);
+              var availableResourceTypes = {};
+              resp.resources.forEach(function(resource) {
+                  availableResourceTypes[resource[chooser_attr]] = true;
+              });
+              chooser.empty();
+              chooser.append(new Option(`${gettext("All")} ${plural_resource_type}`, '*'));
+              populateChooser(chooser, availableResourceTypes)
+              Object.keys(availableResourceTypes).forEach(function (key) {
+                chooser.append(new Option(key, key));
+              });
+              chooser.prop('disabled', false);
+              chooser.change(function() {
+                var chosen_type = $('#resource-type-chooser').val();
+                filtered_reservations = all_reservations.map(function (reservation) {
+                  var reservation_copy = Object.assign({}, reservation)
+                  reservation_copy.data = reservation.data.filter(function(resource){
+                    return chosen_type === '*' || chosen_type === resource[chooser_attr];
+                  })
+                  return reservation_copy
+                })
+                var filtered_resources = resources.filter(function(resource){
+                    return chosen_type === '*' || chosen_type === resource[chooser_attr];
+                })
+                chart.updateOptions({
+                  series: filtered_reservations,
+                  grid: { row: { colors: get_grid_background(filtered_resources) } },
+                })
+                setTimeDomain(getTimeDomain())
+              });
+            } else {
+              chooser.hide()
+            }
+            construct_calendar(filtered_reservations, computeTimeDomain(7))
+          })
+        $("#authorized-project-tooltip").hide().css({position: 'absolute'});
     })
     .fail(function() {
       calendar_element.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
@@ -163,10 +176,28 @@
           zoom: {enabled: false, type: 'xy'},
           height: 60 * resources.length,
           width: "100%",
+          events: {
+            updated: function(chartContext, config){
+              $("rect.apexcharts-grid-row[fill='#aaa']").mouseout(function(event){
+                $("#authorized-project-tooltip").hide();
+              })
+              $("rect.apexcharts-grid-row[fill='#aaa']").mousemove(function(event){
+                var sidebar = $("#sidebar");
+                var sidebar_offset = sidebar.position().left + sidebar.width();
+                var topbar = $(".navbar-fixed-top");
+                var topbar_offset = topbar.position().top + topbar.height();
+                $("#authorized-project-tooltip").show().css({
+                  left: event.pageX - sidebar_offset + 20,
+                  top: event.pageY - topbar_offset + 20,
+                })
+              })
+            }
+          }
         },
         plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
         xaxis: { type: 'datetime' },
         legend: { show: false },
+        grid: { row: { colors: get_grid_background(resources) } },
         tooltip: {
           custom: function({series, seriesIndex, dataPointIndex, w}) {
             var datum = rows[seriesIndex]
@@ -188,11 +219,21 @@
               borderColor: '#00E396',
             }
           ]
-        }
+        },
       }
       chart = new ApexCharts(document.querySelector(selector), options);
       chart.render();
+      console.log("test")
       setTimeDomain(timeDomain); // Also sets the yaxis limits
+    }
+
+    function get_grid_background(resources){
+      return resources.map(function(resource) {
+        if(resource["authorized_projects"]) {
+          return "#aaa";
+        }
+        return undefined;
+      })
     }
 
     function computeTimeDomain(days) {

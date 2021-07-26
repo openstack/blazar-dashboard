@@ -264,6 +264,10 @@ def device_capabilities_list(request):
     return [ExtraCapability(e) for e in extra_capabilities]
 
 
+def device_with_capabilities(request, device_id):
+    return blazarclient(request).device.get(device_id)
+
+
 def compute_host_available(request, start_date, end_date):
     """
     Return the number of compute hosts available for reservation for the entire
@@ -417,7 +421,8 @@ def device_reservation_calendar(request):
     def device2dict(d):
         return dict(
             device_name=d.name, device_type=d.device_type,
-            device_driver=d.device_driver, vendor=d.vendor)
+            device_driver=d.device_driver, vendor=d.vendor,
+            id=d.id)
 
     devices_by_id = {d.id: d for d in device_list(request)}
 

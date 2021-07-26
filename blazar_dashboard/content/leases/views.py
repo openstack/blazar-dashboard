@@ -73,6 +73,13 @@ def calendar_data_view(request, resource_type):
     resources, reservations = api_mapping[resource_type](request)
     data['resources'] = resources
     data['reservations'] = reservations
+    # Code for including authorized_projects capability in response
+    if resource_type == "device":
+        for device in resources:
+            full_device = api.client.device_with_capabilities(request, device["id"])
+            del device["id"]
+            if "authorized_projects" in full_device:
+                device["authorized_projects"] = full_device["authorized_projects"]
     return JsonResponse(data)
 
 
