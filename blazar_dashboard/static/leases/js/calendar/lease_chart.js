@@ -70,6 +70,7 @@
     var filteredReservations; // Reservations to show based on filter
     var form;
     var resources; // Used to calculate the height of the chart
+    var currentResources; // May be filtered
 
     // Guard against re-running init() and a pointless calendar.json load.
     // Horizon seems to call us twice for some reason
@@ -82,6 +83,7 @@
       .done(function(resp) {
         projectId = resp.project_id;
         resources = resp.resources;
+        currentResources = resources
         var reservationsWithResources = resp.reservations;
         reservationsWithResources.forEach( function(reservation) {
           resp.resources.forEach(function(resource){
@@ -145,12 +147,12 @@
               })
               return reservationCopy
             })
-            var filteredResources = resources.filter(function(resource){
+            currentResources = resources.filter(function(resource){
               return chosenType === '*' || chosenType === resource[chooserAttr];
             })
             chart.updateOptions({
               series: filteredReservations,
-              grid: { row: { colors: getGridBackground(filteredResources) } },
+              grid: { row: { colors: getGridBackground(currentResources) } },
             })
             setTimeDomain(getTimeDomain())
           });
@@ -159,6 +161,7 @@
         }
         constructCalendar(filteredReservations, computeTimeDomain(7))
         $("#authorized-project-tooltip").hide().css({position: 'absolute'});
+        $("#restricted_reason_dl").hide();
     })
     .fail(function() {
       calendarElement.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
@@ -178,8 +181,17 @@
             updated: function(chartContext, config){
               $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mouseout(function(event){
                 $("#authorized-project-tooltip").hide();
+                $("#restricted_reason_dl").hide();
               })
               $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mousemove(function(event){
+                // Update restriction reason in tooltip
+                var index = $('rect.apexcharts-grid-row').index(event.target)
+                if("restricted_reason" in currentResources[index]){
+                  $("#restricted_reason_dl").show();
+                  $("#restricted_reason_dl dd").text(currentResources[index]["restricted_reason"]);
+                }
+
+                // Update x,y position of tooltip
                 var sidebar = $("#sidebar");
                 var sidebarOffset = sidebar.position().left + sidebar.width();
                 var topbar = $(".navbar-fixed-top");

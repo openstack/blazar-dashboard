@@ -76,6 +76,8 @@ def calendar_data_view(request, resource_type):
             del device["id"]
             if "authorized_projects" in full_device:
                 device["authorized_projects"] = full_device["authorized_projects"]
+            if "restricted_reason" in full_device:
+                device["restricted_reason"] = full_device["restricted_reason"]
     return JsonResponse(data)
 
 
