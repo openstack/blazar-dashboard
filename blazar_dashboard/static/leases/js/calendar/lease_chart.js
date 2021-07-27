@@ -1,6 +1,8 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
+  const restrictedBackgroundColor = "#aaa";
+
   var selector = undefined; // what selector determines the calendarElement
   var rowAttr = undefined; // what attribute from resources.json labels each chart row
   var pluralResourceType = undefined; // This resource type plural display name
@@ -83,26 +85,26 @@
         var reservationsWithResources = resp.reservations;
         reservationsWithResources.forEach( function(reservation) {
           resp.resources.forEach(function(resource){
-              if(reservation[rowAttr] == resource[rowAttr]){
-                  reservation[chooserAttr] = resource[chooserAttr]
-              }
+            if(reservation[rowAttr] == resource[rowAttr]){
+              reservation[chooserAttr] = resource[chooserAttr]
+            }
           })
         });
         var reservationsById = {}
         reservationsWithResources.forEach(function(reservation){
           if(!(reservation.id in reservationsById)){
-              reservationsById[reservation.id] = reservation
-              reservation.name = reservation.id
-              reservation.data = []
+            reservationsById[reservation.id] = reservation
+            reservation.name = reservation.id
+            reservation.data = []
           }
           var newReservation = {
-              'start_date': new Date(reservation.start_date),
-              'end_date': new Date(reservation.end_date),
-              'x': reservation[rowAttr],
-              'y': [
+            'start_date': new Date(reservation.start_date),
+            'end_date': new Date(reservation.end_date),
+            'x': reservation[rowAttr],
+            'y': [
               new Date(reservation.start_date).getTime(),
               new Date(reservation.end_date).getTime()
-              ],
+            ],
           }
           newReservation[chooserAttr] = reservation[chooserAttr]
           reservationsById[reservation.id].data.push(newReservation)
@@ -111,7 +113,7 @@
         reservationsById["0"] = {"name": "0", "data": []}
         // For this row shows up at all, we need at least 1 data point.
         resp.resources.forEach(function(resource){
-        var dummyData = {x: resource[rowAttr], y: [0, 0]}
+          var dummyData = {x: resource[rowAttr], y: [0, 0]}
           dummyData[chooserAttr] = resource[chooserAttr]
           reservationsById["0"].data.push(dummyData)
         })
@@ -122,34 +124,33 @@
         // populate resource-type-chooser
         var chooser = $("#resource-type-chooser");
         if(populateChooser != undefined){
-        $("label[for='resource-type-chooser']").text(chooserAttrPretty);
-        var availableResourceTypes = {};
-        resp.resources.forEach(function(resource) {
+          $("label[for='resource-type-chooser']").text(chooserAttrPretty);
+          var availableResourceTypes = {};
+          resp.resources.forEach(function(resource) {
             availableResourceTypes[resource[chooserAttr]] = true;
-        });
-        chooser.empty();
-        chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
-        populateChooser(chooser, availableResourceTypes)
-        Object.keys(availableResourceTypes).forEach(function (key) {
+          });
+          chooser.empty();
+          chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
+          populateChooser(chooser, availableResourceTypes)
+          Object.keys(availableResourceTypes).forEach(function (key) {
             chooser.append(new Option(key, key));
-        });
-        chooser.prop('disabled', false);
-        chooser.change(function() {
+          });
+          chooser.prop('disabled', false);
+          chooser.change(function() {
             var chosenType = $('#resource-type-chooser').val();
             filteredReservations = allReservations.map(function (reservation) {
-              console.log(reservation)
               var reservationCopy = Object.assign({}, reservation)
               reservationCopy.data = reservation.data.filter(function(resource){
-                  return chosenType === '*' || chosenType === resource[chooserAttr];
+                return chosenType === '*' || chosenType === resource[chooserAttr];
               })
               return reservationCopy
             })
             var filteredResources = resources.filter(function(resource){
-                return chosenType === '*' || chosenType === resource[chooserAttr];
+              return chosenType === '*' || chosenType === resource[chooserAttr];
             })
             chart.updateOptions({
-                series: filteredReservations,
-                grid: { row: { colors: getGridBackground(filteredResources) } },
+              series: filteredReservations,
+              grid: { row: { colors: getGridBackground(filteredResources) } },
             })
             setTimeDomain(getTimeDomain())
           });
@@ -175,17 +176,17 @@
           width: "100%",
           events: {
             updated: function(chartContext, config){
-              $("rect.apexcharts-grid-row[fill='#aaa']").mouseout(function(event){
+              $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mouseout(function(event){
                 $("#authorized-project-tooltip").hide();
               })
-              $("rect.apexcharts-grid-row[fill='#aaa']").mousemove(function(event){
+              $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mousemove(function(event){
                 var sidebar = $("#sidebar");
-                var sidebar_offset = sidebar.position().left + sidebar.width();
+                var sidebarOffset = sidebar.position().left + sidebar.width();
                 var topbar = $(".navbar-fixed-top");
-                var topbar_offset = topbar.position().top + topbar.height();
+                var topbarOffset = topbar.position().top + topbar.height();
                 $("#authorized-project-tooltip").show().css({
-                  left: event.pageX - sidebar_offset + 20,
-                  top: event.pageY - topbar_offset + 20,
+                  left: event.pageX - sidebarOffset + 20,
+                  top: event.pageY - topbarOffset + 20,
                 })
               })
             }
@@ -226,10 +227,9 @@
     function getGridBackground(resources){
       return resources.map(function(resource) {
         if(resource["authorized_projects"]) {
-            console.log(resource, projectId)
           var projects = resource["authorized_projects"].split(",")
           if(!projects.includes(projectId)){
-            return "#aaa";
+            return restrictedBackgroundColor;
           }
         }
         return undefined;
