@@ -65,6 +65,7 @@ def calendar_data_view(request, resource_type):
         "device": api.client.device_reservation_calendar
     }
     data = {}
+    data["project_id"] = request.user.project_id
     resources, reservations = api_mapping[resource_type](request)
     data['resources'] = resources
     data['reservations'] = reservations

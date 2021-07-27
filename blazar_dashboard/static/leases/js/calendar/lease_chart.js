@@ -60,6 +60,7 @@
   }
   if (selector == undefined) return;
   var calendarElement = $(selector);
+  var projectId; // Used to avoid showing restricted devices if this project is authorized
 
   function init() {
     var chart; // The chart object
@@ -77,89 +78,85 @@
 
     $.getJSON("resources.json")
       .done(function(resp) {
-        var parts = window.location.pathname.split("/");
-        var calendar_index = parts.indexOf("calendar");
-        var resource_type = parts[calendar_index+1];
-        $.getJSON(`../../${resource_type}/extras.json`)
-          .done(function(extrasResp) {
-            resources = resp.resources;
-            var reservationsWithResources = resp.reservations;
-            reservationsWithResources.forEach( function(reservation) {
-            resp.resources.forEach(function(resource){
-                if(reservation[rowAttr] == resource[rowAttr]){
-                reservation[chooserAttr] = resource[chooserAttr]
-                }
-            })
-            });
-            var reservationsById = {}
-            reservationsWithResources.forEach(function(reservation){
-            if(!(reservation.id in reservationsById)){
-                reservationsById[reservation.id] = reservation
-                reservation.name = reservation.id
-                reservation.data = []
-            }
-            var newReservation = {
-                'start_date': new Date(reservation.start_date),
-                'end_date': new Date(reservation.end_date),
-                'x': reservation[rowAttr],
-                'y': [
-                new Date(reservation.start_date).getTime(),
-                new Date(reservation.end_date).getTime()
-                ],
-            }
-            newReservation[chooserAttr] = reservation[chooserAttr]
-            reservationsById[reservation.id].data.push(newReservation)
-            })
-            // Dummy data to force rendering of all resources
-            reservationsById["0"] = {"name": "0", "data": []}
-            // For this row shows up at all, we need at least 1 data point.
-            resp.resources.forEach(function(resource){
-            var dummyData = {x: resource[rowAttr], y: [0, 0]}
-            dummyData[chooserAttr] = resource[chooserAttr]
-            reservationsById["0"].data.push(dummyData)
-            })
-            allReservations = Object.values(reservationsById)
-
-            filteredReservations = allReservations;
-
-            // populate resource-type-chooser
-            var chooser = $("#resource-type-chooser");
-            if(populateChooser != undefined){
-            $("label[for='resource-type-chooser']").text(chooserAttrPretty);
-            var availableResourceTypes = {};
-            resp.resources.forEach(function(resource) {
-                availableResourceTypes[resource[chooserAttr]] = true;
-            });
-            chooser.empty();
-            chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
-            populateChooser(chooser, availableResourceTypes)
-            Object.keys(availableResourceTypes).forEach(function (key) {
-                chooser.append(new Option(key, key));
-            });
-            chooser.prop('disabled', false);
-            chooser.change(function() {
-                var chosenType = $('#resource-type-chooser').val();
-                filteredReservations = allReservations.map(function (reservation) {
-                var reservationCopy = Object.assign({}, reservation)
-                reservationCopy.data = reservation.data.filter(function(resource){
-                    return chosenType === '*' || chosenType === resource[chooserAttr];
-                })
-                return reservationCopy
-                })
-                var filteredResources = resources.filter(function(resource){
-                    return chosenType === '*' || chosenType === resource[chooserAttr];
-                })
-                chart.updateOptions({
-                    series: filteredReservations,
-                    grid: { row: { colors: getGridBackground(filteredResources) } },
-                })
-                setTimeDomain(getTimeDomain())
-            });
-            } else {
-            chooser.hide()
-            }
-            constructCalendar(filteredReservations, computeTimeDomain(7))
+        projectId = resp.project_id;
+        resources = resp.resources;
+        var reservationsWithResources = resp.reservations;
+        reservationsWithResources.forEach( function(reservation) {
+          resp.resources.forEach(function(resource){
+              if(reservation[rowAttr] == resource[rowAttr]){
+                  reservation[chooserAttr] = resource[chooserAttr]
+              }
+          })
+        });
+        var reservationsById = {}
+        reservationsWithResources.forEach(function(reservation){
+          if(!(reservation.id in reservationsById)){
+              reservationsById[reservation.id] = reservation
+              reservation.name = reservation.id
+              reservation.data = []
+          }
+          var newReservation = {
+              'start_date': new Date(reservation.start_date),
+              'end_date': new Date(reservation.end_date),
+              'x': reservation[rowAttr],
+              'y': [
+              new Date(reservation.start_date).getTime(),
+              new Date(reservation.end_date).getTime()
+              ],
+          }
+          newReservation[chooserAttr] = reservation[chooserAttr]
+          reservationsById[reservation.id].data.push(newReservation)
         })
+        // Dummy data to force rendering of all resources
+        reservationsById["0"] = {"name": "0", "data": []}
+        // For this row shows up at all, we need at least 1 data point.
+        resp.resources.forEach(function(resource){
+        var dummyData = {x: resource[rowAttr], y: [0, 0]}
+          dummyData[chooserAttr] = resource[chooserAttr]
+          reservationsById["0"].data.push(dummyData)
+        })
+        allReservations = Object.values(reservationsById)
+
+        filteredReservations = allReservations;
+
+        // populate resource-type-chooser
+        var chooser = $("#resource-type-chooser");
+        if(populateChooser != undefined){
+        $("label[for='resource-type-chooser']").text(chooserAttrPretty);
+        var availableResourceTypes = {};
+        resp.resources.forEach(function(resource) {
+            availableResourceTypes[resource[chooserAttr]] = true;
+        });
+        chooser.empty();
+        chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
+        populateChooser(chooser, availableResourceTypes)
+        Object.keys(availableResourceTypes).forEach(function (key) {
+            chooser.append(new Option(key, key));
+        });
+        chooser.prop('disabled', false);
+        chooser.change(function() {
+            var chosenType = $('#resource-type-chooser').val();
+            filteredReservations = allReservations.map(function (reservation) {
+              console.log(reservation)
+              var reservationCopy = Object.assign({}, reservation)
+              reservationCopy.data = reservation.data.filter(function(resource){
+                  return chosenType === '*' || chosenType === resource[chooserAttr];
+              })
+              return reservationCopy
+            })
+            var filteredResources = resources.filter(function(resource){
+                return chosenType === '*' || chosenType === resource[chooserAttr];
+            })
+            chart.updateOptions({
+                series: filteredReservations,
+                grid: { row: { colors: getGridBackground(filteredResources) } },
+            })
+            setTimeDomain(getTimeDomain())
+          });
+        } else {
+          chooser.hide()
+        }
+        constructCalendar(filteredReservations, computeTimeDomain(7))
         $("#authorized-project-tooltip").hide().css({position: 'absolute'});
     })
     .fail(function() {
@@ -223,14 +220,17 @@
       }
       chart = new ApexCharts(document.querySelector(selector), options);
       chart.render();
-      console.log("test")
       setTimeDomain(timeDomain); // Also sets the yaxis limits
     }
 
     function getGridBackground(resources){
       return resources.map(function(resource) {
         if(resource["authorized_projects"]) {
-          return "#aaa";
+            console.log(resource, projectId)
+          var projects = resource["authorized_projects"].split(",")
+          if(!projects.includes(projectId)){
+            return "#aaa";
+          }
         }
         return undefined;
       })
