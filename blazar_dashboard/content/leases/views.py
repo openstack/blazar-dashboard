@@ -13,16 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from datetime import datetime
-
-from pytz import timezone
-
 from blazar_dashboard import api
-from blazar_dashboard.content.leases import forms as project_forms
 from blazar_dashboard.content.leases import tables as project_tables
 from blazar_dashboard.content.leases import tabs as project_tabs
 from blazar_dashboard.content.leases import workflows as project_workflows
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -106,31 +101,16 @@ class DetailView(tabs.TabView):
 
 class CreateView(workflows.WorkflowView):
     workflow_class = project_workflows.CreateLease
-    success_url = reverse_lazy('horizon:project:leases:index')
-    submit_label = _("Create Lease")
-    submit_url = reverse_lazy('horizon:project:leases:create')
 
 
-class UpdateView(forms.ModalFormView):
-    form_class = project_forms.UpdateForm
-    template_name = 'project/leases/update.html'
-    success_url = reverse_lazy('horizon:project:leases:index')
-    modal_header = _("Update Lease")
+class UpdateView(workflows.WorkflowView):
+    workflow_class = project_workflows.UpdateLease
 
     def get_initial(self):
         initial = super(UpdateView, self).get_initial()
-
         initial['lease'] = self.get_object()
-        if initial['lease']:
-            initial['lease_id'] = initial['lease'].id
-            initial['name'] = initial['lease'].name
 
         return initial
-
-    def get_context_data(self, **kwargs):
-        context = super(UpdateView, self).get_context_data(**kwargs)
-        context['lease'] = self.get_object()
-        return context
 
     @memoized.memoized_method
     def get_object(self):
