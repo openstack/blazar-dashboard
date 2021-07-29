@@ -490,8 +490,7 @@ class CreateLease(workflows.Workflow):
 
         except Exception as e:
             exceptions.handle(self.request,
-                              message=str(e).strip("['']"),
-                              details=_("Please update and try again!"))
+                              message=str(e).strip("['']"))
             return False
 
         return super(CreateLease, self).is_valid()
