@@ -160,8 +160,6 @@
           chooser.hide()
         }
         constructCalendar(filteredReservations, computeTimeDomain(7))
-        $("#authorized-project-tooltip").hide().css({position: 'absolute'});
-        $("#restricted_reason_dl").hide();
     })
     .fail(function() {
       calendarElement.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
@@ -181,14 +179,14 @@
             updated: function(chartContext, config){
               $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mouseout(function(event){
                 $("#authorized-project-tooltip").hide();
-                $("#restricted_reason_dl").hide();
+                $("#restricted-reason-dl").hide();
               })
               $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mousemove(function(event){
                 // Update restriction reason in tooltip
                 var index = $('rect.apexcharts-grid-row').index(event.target)
                 if("restricted_reason" in currentResources[index]){
-                  $("#restricted_reason_dl").show();
-                  $("#restricted_reason_dl dd").text(currentResources[index]["restricted_reason"]);
+                  $("#restricted-reason-dl").show();
+                  $("#restricted-reason-dl dd").text(currentResources[index]["restricted_reason"]);
                 }
 
                 // Update x,y position of tooltip
