@@ -1,6 +1,9 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
+  const CHART_TITLE_HEIGHT = 68;
+  const ROW_HEIGHT = 60;
+
   var selector = undefined; // what selector determines the calendarElement
   var rowAttr = undefined; // what attribute from resources.json labels each chart row
   var pluralResourceType = undefined; // This resource type plural display name
@@ -143,7 +146,7 @@
             })
             chart.updateOptions({
               series: filteredReservations,
-              chart: { height: 60 * filteredReservations[0].data.length + 68}
+              chart: { height: ROW_HEIGHT * filteredReservations[0].data.length + CHART_TITLE_HEIGHT}
             })
             setTimeDomain(getTimeDomain())
           });
@@ -164,7 +167,7 @@
           type: 'rangeBar',
           toolbar: {show: false},
           zoom: {enabled: false, type: 'xy'},
-          height: 60 * resources.length + 68,
+          height: ROW_HEIGHT * resources.length + CHART_TITLE_HEIGHT,
           width: "100%",
         },
         plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
