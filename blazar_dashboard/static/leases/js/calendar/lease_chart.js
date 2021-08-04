@@ -141,7 +141,10 @@
               })
               return reservationCopy
             })
-            chart.updateOptions({series: filteredReservations})
+            chart.updateOptions({
+              series: filteredReservations,
+              chart: { height: 60 * filteredReservations[0].data.length + 68}
+            })
             setTimeDomain(getTimeDomain())
           });
         } else {
@@ -161,7 +164,7 @@
           type: 'rangeBar',
           toolbar: {show: false},
           zoom: {enabled: false, type: 'xy'},
-          height: 60 * resources.length,
+          height: 60 * resources.length + 68,
           width: "100%",
         },
         plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
