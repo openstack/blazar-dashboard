@@ -174,9 +174,13 @@
           custom: function({series, seriesIndex, dataPointIndex, w}) {
             var datum = rows[seriesIndex]
             var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>")
+            var project_dt = ""
+            if(datum.project_id){
+              project_dt = `<dt>${gettext("Project")}</dt>
+                <dd>${datum.project_id}</dd>`
+            }
             return `<div class='tooltip-content'><dl>
-              <dt>${gettext("Project")}</dt>
-                <dd>${datum.project_id}</dd>
+              ${project_dt}
               <dt>${pluralResourceType}</dt>
                 <dd>${resourcesReserved}</dd>
               <dt>${gettext("Reserved")}</dt>
