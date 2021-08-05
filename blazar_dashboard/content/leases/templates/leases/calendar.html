@@ -38,4 +38,13 @@
       <h2>{% trans "Loading Reservations" %}<br><i class="fa fa-spinner fa-spin"></i></h2>
     </div>
   </div>
+  <div id="authorized-project-tooltip">
+    <p>
+      {% trans "This device can only be used by authorized projects as it contains special peripherals. Contact help@chameloncloud.org for access." %}
+    </p>
+    <dl id="restricted-reason-dl">
+      <dt>{% trans "Reason" %}:</dt>
+      <dd></dd>
+    </dl>
+  </div>
 {% endblock %}

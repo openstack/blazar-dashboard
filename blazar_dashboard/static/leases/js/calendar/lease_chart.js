@@ -1,6 +1,7 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
+  const RESTRICTED_BACKGROUND_COLOR = "#aaa";
   const CHART_TITLE_HEIGHT = 68;
   const ROW_HEIGHT = 60;
 
@@ -63,6 +64,7 @@
   }
   if (selector == undefined) return;
   var calendarElement = $(selector);
+  var projectId; // Used to avoid showing restricted devices if this project is authorized
 
   function init() {
     var chart; // The chart object
@@ -70,6 +72,7 @@
     var filteredReservations; // Reservations to show based on filter
     var form;
     var resources; // Used to calculate the height of the chart
+    var currentResources; // May be filtered
 
     // Guard against re-running init() and a pointless calendar.json load.
     // Horizon seems to call us twice for some reason
@@ -80,7 +83,9 @@
 
     $.getJSON("resources.json")
       .done(function(resp) {
+        projectId = resp.project_id;
         resources = resp.resources;
+        currentResources = resources
         var reservationsWithResources = resp.reservations;
         reservationsWithResources.forEach( function(reservation) {
           resp.resources.forEach(function(resource){
@@ -126,7 +131,7 @@
           $("label[for='resource-type-chooser']").text(chooserAttrPretty);
           var availableResourceTypes = {};
           resp.resources.forEach(function(resource) {
-              availableResourceTypes[resource[chooserAttr]] = true;
+            availableResourceTypes[resource[chooserAttr]] = true;
           });
           chooser.empty();
           chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
@@ -144,9 +149,13 @@
               })
               return reservationCopy
             })
+            currentResources = resources.filter(function(resource){
+              return chosenType === '*' || chosenType === resource[chooserAttr];
+            })
             chart.updateOptions({
               series: filteredReservations,
-              chart: { height: ROW_HEIGHT * filteredReservations[0].data.length + CHART_TITLE_HEIGHT}
+              grid: { row: { colors: getGridBackground(currentResources) } },
+              chart: { height: ROW_HEIGHT * currentResources.length + CHART_TITLE_HEIGHT}
             })
             setTimeDomain(getTimeDomain())
           });
@@ -169,10 +178,37 @@
           zoom: {enabled: false, type: 'xy'},
           height: ROW_HEIGHT * resources.length + CHART_TITLE_HEIGHT,
           width: "100%",
+          events: {
+            updated: function(chartContext, config){
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mouseout(function(event){
+                $("#authorized-project-tooltip").hide();
+                $("#restricted-reason-dl").hide();
+              })
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mousemove(function(event){
+                // Update restriction reason in tooltip
+                var index = $('rect.apexcharts-grid-row').index(event.target)
+                if("restricted_reason" in currentResources[index]){
+                  $("#restricted-reason-dl").show();
+                  $("#restricted-reason-dl dd").text(currentResources[index]["restricted_reason"]);
+                }
+
+                // Update x,y position of tooltip
+                var sidebar = $("#sidebar");
+                var sidebarOffset = sidebar.position().left + sidebar.width();
+                var topbar = $(".navbar-fixed-top");
+                var topbarOffset = topbar.position().top + topbar.height();
+                $("#authorized-project-tooltip").show().css({
+                  left: event.pageX - sidebarOffset + 20,
+                  top: event.pageY - topbarOffset + 20,
+                })
+              })
+            }
+          }
         },
         plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
         xaxis: { type: 'datetime' },
         legend: { show: false },
+        grid: { row: { colors: getGridBackground(resources) } },
         tooltip: {
           custom: function({series, seriesIndex, dataPointIndex, w}) {
             var datum = rows[seriesIndex]
@@ -198,11 +234,23 @@
               borderColor: '#00E396',
             }
           ]
-        }
+        },
       }
       chart = new ApexCharts(document.querySelector(selector), options);
       chart.render();
       setTimeDomain(timeDomain); // Also sets the yaxis limits
+    }
+
+    function getGridBackground(resources){
+      return resources.map(function(resource) {
+        if(resource["authorized_projects"]) {
+          var projects = resource["authorized_projects"].split(",")
+          if(!projects.includes(projectId)){
+            return RESTRICTED_BACKGROUND_COLOR;
+          }
+        }
+        return undefined;
+      })
     }
 
     function computeTimeDomain(days) {

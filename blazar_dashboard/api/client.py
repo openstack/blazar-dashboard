@@ -415,9 +415,14 @@ def device_reservation_calendar(request):
     """Return a list of all scheduled device leases."""
 
     def device2dict(d):
-        return dict(
+        device_dict = dict(
             device_name=d.name, device_type=d.device_type,
             device_driver=d.device_driver, vendor=d.vendor)
+        # Copy these keys if they exist
+        for key in ["authorized_projects", "restricted_reason"]:
+            if key in d:
+                device_dict[key] = d[key]
+        return device_dict
 
     devices_by_id = {d.id: d for d in device_list(request)}
 
