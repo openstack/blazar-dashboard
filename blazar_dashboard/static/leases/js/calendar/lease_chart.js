@@ -1,6 +1,9 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
+  const CHART_TITLE_HEIGHT = 68;
+  const ROW_HEIGHT = 60;
+
   var selector = undefined; // what selector determines the calendarElement
   var rowAttr = undefined; // what attribute from resources.json labels each chart row
   var pluralResourceType = undefined; // This resource type plural display name
@@ -141,7 +144,10 @@
               })
               return reservationCopy
             })
-            chart.updateOptions({series: filteredReservations})
+            chart.updateOptions({
+              series: filteredReservations,
+              chart: { height: ROW_HEIGHT * filteredReservations[0].data.length + CHART_TITLE_HEIGHT}
+            })
             setTimeDomain(getTimeDomain())
           });
         } else {
@@ -161,7 +167,7 @@
           type: 'rangeBar',
           toolbar: {show: false},
           zoom: {enabled: false, type: 'xy'},
-          height: 60 * resources.length,
+          height: ROW_HEIGHT * resources.length + CHART_TITLE_HEIGHT,
           width: "100%",
         },
         plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
@@ -171,9 +177,13 @@
           custom: function({series, seriesIndex, dataPointIndex, w}) {
             var datum = rows[seriesIndex]
             var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>")
+            var project_dt = ""
+            if(datum.project_id){
+              project_dt = `<dt>${gettext("Project")}</dt>
+                <dd>${datum.project_id}</dd>`
+            }
             return `<div class='tooltip-content'><dl>
-              <dt>${gettext("Project")}</dt>
-                <dd>${datum.project_id}</dd>
+              ${project_dt}
               <dt>${pluralResourceType}</dt>
                 <dd>${resourcesReserved}</dd>
               <dt>${gettext("Reserved")}</dt>
