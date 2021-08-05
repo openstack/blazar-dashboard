@@ -1,7 +1,9 @@
 (function(window, horizon, $, undefined) {
   'use strict';
 
-  const restrictedBackgroundColor = "#aaa";
+  const RESTRICTED_BACKGROUND_COLOR = "#aaa";
+  const CHART_TITLE_HEIGHT = 68;
+  const ROW_HEIGHT = 60;
 
   var selector = undefined; // what selector determines the calendarElement
   var rowAttr = undefined; // what attribute from resources.json labels each chart row
@@ -153,6 +155,7 @@
             chart.updateOptions({
               series: filteredReservations,
               grid: { row: { colors: getGridBackground(currentResources) } },
+              chart: { height: ROW_HEIGHT * currentResources.length + CHART_TITLE_HEIGHT}
             })
             setTimeDomain(getTimeDomain())
           });
@@ -173,15 +176,15 @@
           type: 'rangeBar',
           toolbar: {show: false},
           zoom: {enabled: false, type: 'xy'},
-          height: 60 * resources.length,
+          height: ROW_HEIGHT * resources.length + CHART_TITLE_HEIGHT,
           width: "100%",
           events: {
             updated: function(chartContext, config){
-              $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mouseout(function(event){
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mouseout(function(event){
                 $("#authorized-project-tooltip").hide();
                 $("#restricted-reason-dl").hide();
               })
-              $(`rect.apexcharts-grid-row[fill='${restrictedBackgroundColor}']`).mousemove(function(event){
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mousemove(function(event){
                 // Update restriction reason in tooltip
                 var index = $('rect.apexcharts-grid-row').index(event.target)
                 if("restricted_reason" in currentResources[index]){
@@ -210,9 +213,13 @@
           custom: function({series, seriesIndex, dataPointIndex, w}) {
             var datum = rows[seriesIndex]
             var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>")
+            var project_dt = ""
+            if(datum.project_id){
+              project_dt = `<dt>${gettext("Project")}</dt>
+                <dd>${datum.project_id}</dd>`
+            }
             return `<div class='tooltip-content'><dl>
-              <dt>${gettext("Project")}</dt>
-                <dd>${datum.project_id}</dd>
+              ${project_dt}
               <dt>${pluralResourceType}</dt>
                 <dd>${resourcesReserved}</dd>
               <dt>${gettext("Reserved")}</dt>
@@ -239,7 +246,7 @@
         if(resource["authorized_projects"]) {
           var projects = resource["authorized_projects"].split(",")
           if(!projects.includes(projectId)){
-            return restrictedBackgroundColor;
+            return RESTRICTED_BACKGROUND_COLOR;
           }
         }
         return undefined;
