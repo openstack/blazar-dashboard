@@ -434,7 +434,8 @@ def device_reservation_calendar(request):
             end_date=_parse_api_datestr(reservation['end_date']),
             id=reservation['id'],
             status=reservation.get('status'),
-            device_name=devices_by_id[resource_id].name)
+            device_name=devices_by_id[resource_id].name,
+            extras=reservation.get("extras"))
 
         return {k: v for k, v in device_reservation.items() if v is not None}
 

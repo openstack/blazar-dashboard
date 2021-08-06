@@ -211,12 +211,20 @@
         grid: { row: { colors: getGridBackground(resources) } },
         tooltip: {
           custom: function({series, seriesIndex, dataPointIndex, w}) {
-            var datum = rows[seriesIndex]
-            var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>")
-            var project_dt = ""
+            var datum = rows[seriesIndex];
+            var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>");
+            var project_dt = "";
             if(datum.project_id){
               project_dt = `<dt>${gettext("Project")}</dt>
-                <dd>${datum.project_id}</dd>`
+                <dd>${datum.project_id}</dd>`;
+            }
+            var extras_dt = "";
+            if(datum.extras){
+              datum.extras.forEach(function (item){
+                var title = item[0];
+                var value = item[1];
+                extras_dt += `<dt>${title}</dt><dd>${value}</dd>`;
+              });
             }
             return `<div class='tooltip-content'><dl>
               ${project_dt}
@@ -224,7 +232,8 @@
                 <dd>${resourcesReserved}</dd>
               <dt>${gettext("Reserved")}</dt>
                 <dd>${datum.start_date} <strong>${gettext("to")}</strong> ${datum.end_date}</dd>
-            </dl></div>`
+              ${extras_dt}
+            </dl></div>`;
           }
         },
         annotations: {
