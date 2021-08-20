@@ -1,0 +1,5 @@
+features:
+  - |
+    A calendar view of host availability is added. Any reservable host will
+    be shown in its own row, over a period of time. Allocations for the host
+    are indicated along the horizontal axis.

@@ -10,9 +10,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from datetime import datetime
+from itertools import chain
 import json
 import logging
+from pytz import UTC
 
+from blazar_dashboard import conf
 from horizon import exceptions
 from horizon.utils.memoized import memoized
 from openstack_dashboard.api import base
@@ -55,6 +59,11 @@ class Host(base.APIDictWrapper):
             if k not in self._attrs:
                 excaps[k] = v
         return excaps
+
+
+class Allocation(base.APIDictWrapper):
+
+    _attrs = ['resource_id', 'reservations']
 
 
 @memoized
@@ -129,3 +138,62 @@ def host_update(request, host_id, values):
 def host_delete(request, host_id):
     """Delete a host."""
     blazarclient(request).host.delete(host_id)
+
+
+def host_allocations_list(request):
+    """List allocations for all hosts."""
+    request_manager = blazarclient(request).host.request_manager
+    resp, body = request_manager.get('/os-hosts/allocations')
+    allocations = body['allocations']
+    return [Allocation(a) for a in allocations]
+
+
+def reservation_calendar(request):
+    """Return a list of all scheduled leases."""
+
+    def compute_host2dict(h):
+        dictionary = dict(
+            hypervisor_hostname=h.hypervisor_hostname, vcpus=h.vcpus,
+            memory_mb=h.memory_mb, local_gb=h.local_gb, cpu_info=h.cpu_info,
+            hypervisor_type=h.hypervisor_type,)
+        # Ensure config attribute is copied over
+        calendar_attribute = conf.host_reservation.get('calendar_attribute')
+        dictionary[calendar_attribute] = (
+            h[calendar_attribute]
+        )
+        return dictionary
+
+    # NOTE: This filters by reservable hosts
+    hosts_by_id = {h.id: h for h in host_list(request) if h.reservable}
+
+    def host_reservation_dict(reservation, resource_id):
+        host_reservation = dict(
+            start_date=_parse_api_datestr(reservation['start_date']),
+            end_date=_parse_api_datestr(reservation['end_date']),
+            reservation_id=reservation['id'],
+        )
+        calendar_attribute = conf.host_reservation.get('calendar_attribute')
+        host_reservation[calendar_attribute] = (
+            hosts_by_id[resource_id][calendar_attribute]
+        )
+
+        return {k: v for k, v in host_reservation.items() if v is not None}
+
+    host_reservations = [
+        [host_reservation_dict(r, alloc.resource_id)
+            for r in alloc.reservations
+            if alloc.resource_id in hosts_by_id]
+        for alloc in host_allocations_list(request)]
+
+    compute_hosts = [compute_host2dict(h) for h in hosts_by_id.values()]
+
+    return compute_hosts, list(chain(*host_reservations))
+
+
+def _parse_api_datestr(datestr):
+    if datestr is None:
+        return datestr
+
+    dateobj = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S.%f")
+
+    return dateobj.replace(tzinfo=UTC)

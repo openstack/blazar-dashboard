@@ -1,0 +1,55 @@
+.blazar-calendar {
+  width: 100%;
+  min-height: 800px;
+  position: relative;
+}
+
+.blazar-calendar .chart {
+  width: 100%;
+}
+
+.apexcharts-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.apexcharts-series {
+  opacity: 0.9;
+}
+
+.apexcharts-series.apexcharts-active {
+  stroke: yellow;
+}
+
+.apexcharts-xaxis-annotations line {
+  stroke: #A8DE52;
+  stroke-width: 3;
+}
+
+.apexcharts-yaxis-label {
+  stroke: rgba(#000, 0.25);
+}
+
+.axis line,
+.axis path {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2;
+  shape-rendering: crispEdges;
+}
+
+.calendar-group {
+  margin: 5px;
+}
+
+.form-control.calendar-datebox-date {
+  width: 120px;
+}
+
+.form-control.calendar-datebox-hour {
+  width: 55px;
+}
+

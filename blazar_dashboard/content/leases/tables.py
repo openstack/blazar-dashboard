@@ -24,6 +24,7 @@ from horizon.utils import filters
 import pytz
 
 from blazar_dashboard import api
+from blazar_dashboard import conf
 
 
 class CreateLease(tables.LinkAction):
@@ -45,6 +46,14 @@ class UpdateLease(tables.LinkAction):
                 replace(tzinfo=pytz.utc) > datetime.now(pytz.utc):
             return True
         return False
+
+
+class ViewHostReservationCalendar(tables.LinkAction):
+    name = "calendar"
+    verbose_name = _("Host Calendar")
+    url = "calendar/host/"
+    classes = ("btn-default", )
+    icon = "calendar"
 
 
 class DeleteLease(tables.DeleteAction):
@@ -92,5 +101,7 @@ class LeasesTable(tables.DataTable):
     class Meta(object):
         name = "leases"
         verbose_name = _("Leases")
-        table_actions = (CreateLease, DeleteLease, )
+        table_actions = [CreateLease, DeleteLease, ]
+        if conf.host_reservation.get('enabled'):
+            table_actions.insert(0, ViewHostReservationCalendar)
         row_actions = (UpdateLease, DeleteLease, )

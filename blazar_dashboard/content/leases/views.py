@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from django.http import JsonResponse
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -21,8 +22,10 @@ from horizon import forms
 from horizon import tables
 from horizon import tabs
 from horizon.utils import memoized
+from horizon import views
 
 from blazar_dashboard import api
+from blazar_dashboard import conf
 from blazar_dashboard.content.leases import forms as project_forms
 from blazar_dashboard.content.leases import tables as project_tables
 from blazar_dashboard.content.leases import tabs as project_tabs
@@ -40,6 +43,38 @@ class IndexView(tables.DataTableView):
             msg = _('Unable to retrieve lease information.')
             exceptions.handle(self.request, msg)
         return leases
+
+
+class CalendarView(views.APIView):
+    template_name = 'project/leases/calendar.html'
+
+    titles = {
+        "host": _("Host Calendar"),
+    }
+
+    def get_data(self, request, context, *args, **kwargs):
+        if context["resource_type"] not in self.titles:
+            raise exceptions.NotFound
+        context["calendar_title"] = self.titles[context["resource_type"]]
+        return context
+
+
+def calendar_data_view(request, resource_type):
+    api_mapping = {
+        "host": api.client.reservation_calendar,
+    }
+    attribute_mapping = {
+        "host": conf.host_reservation.get('calendar_attribute'),
+    }
+    data = {}
+    if resource_type not in api_mapping:
+        raise exceptions.NotFound
+    resources, reservations = api_mapping[resource_type](request)
+    data['resources'] = resources
+    data['reservations'] = reservations
+    # Which attribute to use to determine calendar rows
+    data['row_attr'] = attribute_mapping[resource_type]
+    return JsonResponse(data)
 
 
 class DetailView(tabs.TabView):

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Leases" %}{% endblock %}
+
+{% block page_header %}
+{% include "horizon/common/_page_header.html" with title=calendar_title %}
+{% endblock page_header %}
+
+{% block main %}
+  <form class="form-inline" name="blazar-calendar-controls">
+    <div class="form-group calendar-group">
+      <button class="btn btn-sm btn-default calendar-quickdays" data-calendar-days="1">1 {% trans "day" %}</button>
+      <button class="btn btn-sm btn-default calendar-quickdays" data-calendar-days="7">7 {% trans "days" %}</button>
+      <button class="btn btn-sm btn-default calendar-quickdays" data-calendar-days="30">30 {% trans "days" %}</button>
+    </div>
+    <div class="form-group calendar-group">
+      <label for="dateStart">{% trans "Start" %}</label>
+      <input class="form-control calendar-datebox-date" type="text" name="dateStart" id="dateStart" placeholder="MM/DD/YYYY">
+      <input class="form-control calendar-datebox-hour" type="number" min="00" max="23" name="timeStartHours" id="timeStartHours" placeholder="hh">
+      :
+      00
+    </div>
+    <div class="form-group calendar-group">
+      <label for="dateEnd">{% trans "End" %}</label>
+      <input class="form-control calendar-datebox-date" type="text" name="dateEnd" id="dateEnd" placeholder="MM/DD/YYYY">
+      <input class="form-control calendar-datebox-hour" type="number" min="00" max="23" name="timeEndHours" id="timeEndHours" placeholder="hh">
+      :
+      00
+    </div>
+  </form>
+  <div class="blazar-calendar" id="blazar-calendar-{{resource_type}}">
+    <div class="text-center">
+      <h2>{% trans "Loading Reservations" %}<br><i class="fa fa-spinner fa-spin"></i></h2>
+    </div>
+  </div>
+{% endblock %}
