@@ -47,6 +47,9 @@ PRETTY_TYPE_NAMES = OrderedDict([
     ('arm64', _('ARM64')),
 ])
 
+PRETTY_EXTRA_LABELS = {
+    "name": _("Reserved by")
+}
 
 class Lease(base.APIDictWrapper):
     """Represents one Blazar lease."""
@@ -434,7 +437,9 @@ def device_reservation_calendar(request):
             end_date=_parse_api_datestr(reservation['end_date']),
             id=reservation['id'],
             status=reservation.get('status'),
-            device_name=devices_by_id[resource_id].name)
+            device_name=devices_by_id[resource_id].name,
+            extras=[(PRETTY_EXTRA_LABELS[key], value) for key, value in reservation.get("extras").items()]
+        )
 
         return {k: v for k, v in device_reservation.items() if v is not None}
 
