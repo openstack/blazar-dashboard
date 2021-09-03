@@ -48,7 +48,7 @@ PRETTY_TYPE_NAMES = OrderedDict([
 ])
 
 PRETTY_EXTRA_LABELS = {
-    "name": _("Reserved by")
+    "user_name": _("Reserved by")
 }
 
 class Lease(base.APIDictWrapper):
