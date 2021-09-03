@@ -420,7 +420,8 @@ def device_reservation_calendar(request):
     def device2dict(d):
         device_dict = dict(
             device_name=d.name, device_type=d.device_type,
-            device_driver=d.device_driver, vendor=d.vendor)
+            device_driver=d.device_driver, vendor=d.vendor,
+            reservable=d.reservable)
         # Copy these keys if they exist
         for key in ["authorized_projects", "restricted_reason"]:
             if key in d:

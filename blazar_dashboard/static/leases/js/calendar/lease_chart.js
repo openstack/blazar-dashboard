@@ -1,4 +1,4 @@
-(function(window, horizon, $, undefined) {
+(function (window, horizon, $, undefined) {
   'use strict';
 
   const RESTRICTED_BACKGROUND_COLOR = "#aaa";
@@ -19,7 +19,7 @@
     pluralResourceType = gettext("Hosts");
     chooserAttr = "node_type";
     chooserAttrPretty = gettext("Node Type");
-    populateChooser = function(chooser, availableResourceTypes){
+    populateChooser = function (chooser, availableResourceTypes) {
       var nodeTypesPretty = [ // preserve order so it's not random
         ['compute', gettext('Compute Node')],
         ['storage', gettext('Storage')],
@@ -40,7 +40,7 @@
         ['atom', gettext('Atom')],
         ['arm64', gettext('ARM64')],
       ];
-      nodeTypesPretty.forEach(function(nt) {
+      nodeTypesPretty.forEach(function (nt) {
         if (availableResourceTypes[nt[0]]) {
           chooser.append(new Option(nt[1], nt[0]));
           delete availableResourceTypes[nt[0]];
@@ -60,7 +60,7 @@
 
     chooserAttr = "vendor";
     chooserAttrPretty = gettext("Vendor");
-    populateChooser = function(chooser, availableResourceTypes){}
+    populateChooser = function (chooser, availableResourceTypes) { }
   }
   if (selector == undefined) return;
   var calendarElement = $(selector);
@@ -82,21 +82,21 @@
     calendarElement.addClass('loaded');
 
     $.getJSON("resources.json")
-      .done(function(resp) {
+      .done(function (resp) {
         projectId = resp.project_id;
         resources = resp.resources;
         currentResources = resources
         var reservationsWithResources = resp.reservations;
-        reservationsWithResources.forEach( function(reservation) {
-          resp.resources.forEach(function(resource){
-            if(reservation[rowAttr] == resource[rowAttr]){
+        reservationsWithResources.forEach(function (reservation) {
+          resp.resources.forEach(function (resource) {
+            if (reservation[rowAttr] == resource[rowAttr]) {
               reservation[chooserAttr] = resource[chooserAttr]
             }
           })
         });
         var reservationsById = {}
-        reservationsWithResources.forEach(function(reservation){
-          if(!(reservation.id in reservationsById)){
+        reservationsWithResources.forEach(function (reservation) {
+          if (!(reservation.id in reservationsById)) {
             reservationsById[reservation.id] = reservation
             reservation.name = reservation.id
             reservation.data = []
@@ -114,10 +114,10 @@
           reservationsById[reservation.id].data.push(newReservation)
         })
         // Dummy data to force rendering of all resources
-        reservationsById["0"] = {"name": "0", "data": []}
+        reservationsById["0"] = { "name": "0", "data": [] }
         // For this row shows up at all, we need at least 1 data point.
-        resp.resources.forEach(function(resource){
-          var dummyData = {x: resource[rowAttr], y: [0, 0]}
+        resp.resources.forEach(function (resource) {
+          var dummyData = { x: resource[rowAttr], y: [0, 0] }
           dummyData[chooserAttr] = resource[chooserAttr]
           reservationsById["0"].data.push(dummyData)
         })
@@ -127,10 +127,10 @@
 
         // populate resource-type-chooser
         var chooser = $("#resource-type-chooser");
-        if(populateChooser != undefined){
+        if (populateChooser != undefined) {
           $("label[for='resource-type-chooser']").text(chooserAttrPretty);
           var availableResourceTypes = {};
-          resp.resources.forEach(function(resource) {
+          resp.resources.forEach(function (resource) {
             availableResourceTypes[resource[chooserAttr]] = true;
           });
           chooser.empty();
@@ -140,22 +140,22 @@
             chooser.append(new Option(key, key));
           });
           chooser.prop('disabled', false);
-          chooser.change(function() {
+          chooser.change(function () {
             var chosenType = $('#resource-type-chooser').val();
             filteredReservations = allReservations.map(function (reservation) {
               var reservationCopy = Object.assign({}, reservation)
-              reservationCopy.data = reservation.data.filter(function(resource){
+              reservationCopy.data = reservation.data.filter(function (resource) {
                 return chosenType === '*' || chosenType === resource[chooserAttr];
               })
               return reservationCopy
             })
-            currentResources = resources.filter(function(resource){
+            currentResources = resources.filter(function (resource) {
               return chosenType === '*' || chosenType === resource[chooserAttr];
             })
             chart.updateOptions({
               series: filteredReservations,
               grid: { row: { colors: getGridBackground(currentResources) } },
-              chart: { height: ROW_HEIGHT * currentResources.length + CHART_TITLE_HEIGHT}
+              chart: { height: ROW_HEIGHT * currentResources.length + CHART_TITLE_HEIGHT }
             })
             setTimeDomain(getTimeDomain())
           });
@@ -163,64 +163,66 @@
           chooser.hide()
         }
         constructCalendar(filteredReservations, computeTimeDomain(7))
-    })
-    .fail(function() {
-      calendarElement.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
-    });
+      })
+      .fail(function () {
+        calendarElement.html(`<div class="alert alert-danger">${gettext("Unable to load reservations")}.</div>`);
+      });
 
-    function constructCalendar(rows, timeDomain){
+    function constructCalendar(rows, timeDomain) {
       calendarElement.empty();
       var options = {
         series: rows,
         chart: {
           type: 'rangeBar',
-          toolbar: {show: false},
-          zoom: {enabled: false, type: 'xy'},
+          toolbar: { show: false },
+          zoom: { enabled: false, type: 'xy' },
           height: ROW_HEIGHT * resources.length + CHART_TITLE_HEIGHT,
           width: "100%",
           events: {
-            updated: function(chartContext, config){
-              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mouseout(function(event){
-                $("#authorized-project-tooltip").hide();
-                $("#restricted-reason-dl").hide();
-              })
-              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mousemove(function(event){
+            updated: function (chartContext, config) {
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mouseout(function (event) {
+                $("#resource-disabled-tooltip").hide();
+              });
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mouseenter(function (event) {
+                var tooltip = $("#resource-disabled-tooltip").show();
                 // Update restriction reason in tooltip
-                var index = $('rect.apexcharts-grid-row').index(event.target)
-                if("restricted_reason" in currentResources[index]){
-                  $("#restricted-reason-dl").show();
-                  $("#restricted-reason-dl dd").text(currentResources[index]["restricted_reason"]);
-                }
-
+                var index = $('rect.apexcharts-grid-row').index(event.target);
+                var resource = currentResources[index]
+                tooltip.find(".reason-down").toggle(resource["reservable"] === false);
+                tooltip.find(".reason-restricted").toggle("authorized_projects" in resource);
+                $("#restricted-reason-dl").toggle("restricted_reason" in resource);
+                $("#restricted-reason-dl dd").text(resource["restricted_reason"]);
+              });
+              $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mousemove(function (event) {
                 // Update x,y position of tooltip
                 var sidebar = $("#sidebar");
                 var sidebarOffset = sidebar.position().left + sidebar.width();
                 var topbar = $(".navbar-fixed-top");
                 var topbarOffset = topbar.position().top + topbar.height();
-                $("#authorized-project-tooltip").show().css({
+                $("#resource-disabled-tooltip").show().css({
                   left: event.pageX - sidebarOffset + 20,
                   top: event.pageY - topbarOffset + 20,
-                })
-              })
+                });
+              });
             }
           }
         },
-        plotOptions: { bar: {horizontal: true, rangeBarGroupRows: true}},
+        plotOptions: { bar: { horizontal: true, rangeBarGroupRows: true } },
         xaxis: { type: 'datetime' },
         legend: { show: false },
         grid: { row: { colors: getGridBackground(resources) } },
         tooltip: {
-          custom: function({series, seriesIndex, dataPointIndex, w}) {
+          custom: function ({ series, seriesIndex, dataPointIndex, w }) {
             var datum = rows[seriesIndex];
-            var resourcesReserved = datum.data.map(function(el){ return el.x }).join("<br>");
+            var resourcesReserved = datum.data.map(function (el) { return el.x }).join("<br>");
             var project_dt = "";
-            if(datum.project_id){
+            if (datum.project_id) {
               project_dt = `<dt>${gettext("Project")}</dt>
                 <dd>${datum.project_id}</dd>`;
             }
             var extras_dt = "";
-            if(datum.extras){
-              datum.extras.forEach(function (item){
+            if (datum.extras) {
+              datum.extras.forEach(function (item) {
                 var title = item[0];
                 var value = item[1];
                 extras_dt += `<dt>${title}</dt><dd>${value}</dd>`;
@@ -250,20 +252,22 @@
       setTimeDomain(timeDomain); // Also sets the yaxis limits
     }
 
-    function getGridBackground(resources){
-      return resources.map(function(resource) {
-        if(resource["authorized_projects"]) {
+    function getGridBackground(resources) {
+      return resources.map(function (resource) {
+        if (resource["reservable"] === false) {
+          return RESTRICTED_BACKGROUND_COLOR;
+        }
+        if (resource["authorized_projects"]) {
           var projects = resource["authorized_projects"].split(",")
-          if(!projects.includes(projectId)){
+          if (!projects.includes(projectId)) {
             return RESTRICTED_BACKGROUND_COLOR;
           }
         }
-        return undefined;
       })
     }
 
     function computeTimeDomain(days) {
-      var padFraction = 1/8; // chart default is 3 hours for 1 day
+      var padFraction = 1 / 8; // chart default is 3 hours for 1 day
       return [
         d3.time.day.offset(Date.now(), -days * padFraction),
         d3.time.day.offset(Date.now(), days * (1 + padFraction))
@@ -279,8 +283,8 @@
       $('#timeEndHours').val(timeDomain[1].getHours());
       form.addClass('time-domain-processed');
       // If the chart exists, update its axis
-      if(chart){
-        var options = { yaxis: {min: timeDomain[0].getTime(), max: timeDomain[1].getTime()}}
+      if (chart) {
+        var options = { yaxis: { min: timeDomain[0].getTime(), max: timeDomain[1].getTime() } }
         chart.updateOptions(options)
       }
     }
@@ -305,7 +309,7 @@
       dateFormat: 'mm/dd/yyyy'
     });
 
-    $('input', form).on('change', function() {
+    $('input', form).on('change', function () {
       if (form.hasClass('time-domain-processed')) {
         var timeDomain = getTimeDomain();
         // If invalid ordering is chosen, set period to 1 day
@@ -316,7 +320,7 @@
       }
     });
 
-    $('.calendar-quickdays').click(function() {
+    $('.calendar-quickdays').click(function () {
       var days = parseInt($(this).data("calendar-days"));
       if (!isNaN(days)) {
         var timeDomain = computeTimeDomain(days);
