@@ -16,14 +16,14 @@
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
-.tooltip-content, #authorized-project-tooltip {
+.tooltip-content, #resource-disabled-tooltip {
   box-sizing: border-box;
   background-color: #eee;
   border-color: #ccc;
   padding: 3px;
 }
 
-#authorized-project-tooltip {
+#resource-disabled-tooltip {
   max-width: 300px;
 }
 
@@ -64,11 +64,7 @@
   width: 55px;
 }
 
-#authorized-project-tooltip {
+#resource-disabled-tooltip {
     display: none;
     position: absolute;
-}
-
-#resticted-reason-dl {
-    display: none;
 }
