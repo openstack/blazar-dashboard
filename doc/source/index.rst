@@ -29,6 +29,13 @@ The following features are currently supported:
   * Update a host
   * Delete host(s)
 
+
+.. toctree::
+   :maxdepth: 2
+
+   calendar
+
+
 Installation Guide
 ==================
 
