@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Error details are now displayed when failing to create or update leases.
