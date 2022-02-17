@@ -3,6 +3,7 @@ from django.conf import settings
 host_reservation = (
     getattr(settings, 'OPENSTACK_BLAZAR_HOST_RESERVATION', {
         'enabled': True,
+        'url_format': None,
     }))
 
 floatingip_reservation = (
