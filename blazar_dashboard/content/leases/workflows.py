@@ -1,5 +1,5 @@
 import datetime
-
+import json
 import pytz
 
 from blazar_dashboard import api
@@ -637,6 +637,17 @@ class UpdateHostsAction(workflows.Action):
 
         return cleaned_data
 
+class UpdateFloatingIPsAction(workflows.Action):
+    amount_floatingips = forms.IntegerField(
+        label=_('Amount of Floating IPs'),
+        required=False,
+        help_text=_('Enter the updated amount of floating IPs to reserve.'),
+        min_value=0
+    )
+
+    class Meta(object):
+        name = _('Floating IPs')
+        help_text = _("Floating IPs can be added or removed.")
 
 class UpdateHosts(workflows.Step):
     action_class = UpdateHostsAction
@@ -645,6 +656,12 @@ class UpdateHosts(workflows.Step):
     def allowed(self, request):
         return conf.host_reservation.get("enabled", False)
 
+class UpdateFloatingIPs(workflows.Step):
+    action_class = UpdateFloatingIPsAction
+    contributes = ("amount_floatingips",)
+
+    def allowed(self, request):
+        return conf.floatingip_reservation.get('enabled', False)
 
 class UpdateLease(workflows.Workflow):
     slug = "update_lease"
@@ -669,6 +686,11 @@ class UpdateLease(workflows.Workflow):
         if 'physical:host' in resource_types:
             self.is_hostreservation_included = True
             self.register(UpdateHosts)
+
+        self.is_fipreservation_included = False
+        if 'virtual:floatingip' in resource_types:
+            self.is_fipreservation_included = True
+            self.register(UpdateFloatingIPs)
 
         super(UpdateLease, self).__init__(
             request, context_seed, entry_point, *args, **kwargs)
@@ -704,6 +726,7 @@ class UpdateLease(workflows.Workflow):
             fields['reduce_by'] = min_string
             is_update = True
 
+        fields['reservations'] = []
         if conf.host_reservation.get("enabled", False) and \
                 self.is_hostreservation_included:
             min_hosts = data.get('min_hosts')
@@ -722,19 +745,55 @@ class UpdateLease(workflows.Workflow):
                     return
 
                 lease = api.client.lease_get(self.request, lease_id)
-                fields['reservations'] = lease['reservations']
-                if len(fields['reservations']) != 1:
+                existing_reservations = [
+                    res for res in lease['reservations']
+                    if res["resource_type"] == "physical:host"
+                ]
+                if len(existing_reservations) != 1:
                     messages.error(request, "Cannot update node count for a lease "
-                                            "with multiple reservations.")
+                                            "with multiple host reservations.")
                     return
-                fields['reservations'][0]['min'] = min_hosts
-                fields['reservations'][0]['max'] = min_hosts
+                existing_reservations[0]['min'] = min_hosts
+                existing_reservations[0]['max'] = min_hosts
+                fields['reservations'] += existing_reservations
+                is_update = True
+
+        if conf.floatingip_reservation.get("enabled", False) and \
+                self.is_fipreservation_included:
+            amount_floatingips = data.get('amount_floatingips')
+            if amount_floatingips is not None:
+                try:
+                    amount_floatingips = int(amount_floatingips)
+                except ValueError as e:
+                    LOG.error('Error updating lease: %s', e)
+                    exceptions.handle(
+                        request, message="Invalid value provided.")
+                    return
+
+                lease = api.client.lease_get(self.request, lease_id)
+                existing_reservations = [
+                    res for res in lease['reservations']
+                    if res["resource_type"] == "virtual:floatingip"
+                ]
+                if len(existing_reservations) != 1:
+                    messages.error(request, "Cannot update node count for a lease "
+                                            "with multiple floating IP reservations.")
+                    return
+                existing_reservations[0]['amount'] = amount_floatingips
+                fields['reservations'] += existing_reservations
                 is_update = True
 
         reservations = data.get('reservations', None)
         if reservations:
-            fields['reservations'] = reservations
-            is_update = True
+            try:
+                fields['reservations'] += json.loads(reservations)
+                is_update = True
+            except json.JSONDecodeError:
+                exceptions.handle(request, message="Invalid JSON provided")
+                return
+
+        if len(fields['reservations']) == 0:
+            del fields['reservations']
 
         if not is_update:
             raise forms.ValidationError("Nothing to update.")
