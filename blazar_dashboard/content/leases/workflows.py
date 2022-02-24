@@ -776,7 +776,7 @@ class UpdateLease(workflows.Workflow):
                     if res["resource_type"] == "virtual:floatingip"
                 ]
                 if len(existing_reservations) != 1:
-                    messages.error(request, "Cannot update node count for a lease "
+                    messages.error(request, "Cannot update floating IP amount for a lease "
                                             "with multiple floating IP reservations.")
                     return
                 existing_reservations[0]['amount'] = amount_floatingips
@@ -792,7 +792,7 @@ class UpdateLease(workflows.Workflow):
                 exceptions.handle(request, message="Invalid JSON provided")
                 return
 
-        if len(fields['reservations']) == 0:
+        if not fields['reservations']:
             del fields['reservations']
 
         if not is_update:
