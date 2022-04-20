@@ -61,8 +61,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Blazar dashboard Release Notes'
-copyright = u'2017, OpenStack Foundation'
+project = 'Blazar dashboard Release Notes'
+copyright = '2017, OpenStack Foundation'
 
 # Release notes are version independent
 # The full version, including alpha/beta/rc tags.
@@ -209,8 +209,8 @@ latex_elements = {
 latex_documents = [
     ('index',
      'Blazar-dashboardReleaseNotes.tex',
-     u'Blazar dashboard Release Notes Documentation',
-     u'Blazar dashboard Developers',
+     'Blazar dashboard Release Notes Documentation',
+     'Blazar dashboard Developers',
      'manual'),
 ]
 
@@ -241,8 +241,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'blazar_dashboardreleasenotes',
-     u'Blazar dashboard Release Notes Documentation',
-     [u'Blazar dashboard Developers'], 1)
+     'Blazar dashboard Release Notes Documentation',
+     ['Blazar dashboard Developers'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -256,8 +256,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'Blazar-dashboardReleaseNotes',
-     u'Blazar dashboard Release Notes Documentation',
-     u'Blazar dashboard Developers', 'Blazar-dashboardReleaseNotes',
+     'Blazar dashboard Release Notes Documentation',
+     'Blazar dashboard Developers', 'Blazar-dashboardReleaseNotes',
      'Resource reservation service for OpenStack',
      'Miscellaneous'),
 ]
