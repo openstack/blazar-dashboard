@@ -13,21 +13,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.conf.urls import url
+from django.urls import re_path
 
 from blazar_dashboard.content.leases import views as leases_views
 
 
 urlpatterns = [
-    url(r'^calendar/(?P<resource_type>[^/]+)/$',
-        leases_views.CalendarView.as_view(), name='calendar'),
-    url(r'^calendar/(?P<resource_type>[^/]+)/resources\.json$',
-        leases_views.calendar_data_view,
-        name='calendar_data'),
-    url(r'^$', leases_views.IndexView.as_view(), name='index'),
-    url(r'^create/$', leases_views.CreateView.as_view(), name='create'),
-    url(r'^(?P<lease_id>[^/]+)/$', leases_views.DetailView.as_view(),
-        name='detail'),
-    url(r'^(?P<lease_id>[^/]+)/update$', leases_views.UpdateView.as_view(),
-        name='update'),
+    re_path(r'^calendar/(?P<resource_type>[^/]+)/$',
+            leases_views.CalendarView.as_view(), name='calendar'),
+    re_path(r'^calendar/(?P<resource_type>[^/]+)/resources\.json$',
+            leases_views.calendar_data_view,
+            name='calendar_data'),
+    re_path(r'^$', leases_views.IndexView.as_view(), name='index'),
+    re_path(r'^create/$', leases_views.CreateView.as_view(), name='create'),
+    re_path(r'^(?P<lease_id>[^/]+)/$', leases_views.DetailView.as_view(),
+            name='detail'),
+    re_path(r'^(?P<lease_id>[^/]+)/update$',
+            leases_views.UpdateView.as_view(),
+            name='update'),
 ]
