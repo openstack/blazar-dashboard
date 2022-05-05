@@ -49,6 +49,7 @@ PRETTY_EXTRA_LABELS = {
     "user_name": _("Reserved by")
 }
 
+
 class Lease(base.APIDictWrapper):
     """Represents one Blazar lease."""
 
@@ -351,9 +352,13 @@ def reservation_calendar(request):
             hypervisor_hostname=h.hypervisor_hostname, vcpus=h.vcpus,
             memory_mb=h.memory_mb, local_gb=h.local_gb, cpu_info=h.cpu_info,
             hypervisor_type=h.hypervisor_type, node_type=h.node_type,
-            node_name=compute_host_display_name(h))
+            node_name=compute_host_display_name(h), reservable=h.reservable)
+        url_format = conf.host_reservation.get("url_format")
+        if url_format:
+            host_dict["url"] = url_format.format(**host_dict)
+        return host_dict
 
-    hosts_by_id = {h.id: h for h in host_list(request) if h.reservable}
+    hosts_by_id = {h.id: h for h in host_list(request)}
 
     def host_reservation_dict(reservation, resource_id):
         host_reservation = dict(
@@ -437,7 +442,8 @@ def device_reservation_calendar(request):
             id=reservation['id'],
             status=reservation.get('status'),
             device_name=devices_by_id[resource_id].name,
-            extras=[(PRETTY_EXTRA_LABELS[key], value) for key, value in reservation.get("extras").items()]
+            extras=[(PRETTY_EXTRA_LABELS[key], value)
+                    for key, value in reservation.get("extras").items()]
         )
 
         return {k: v for k, v in device_reservation.items() if v is not None}
