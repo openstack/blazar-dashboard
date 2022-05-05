@@ -356,6 +356,10 @@ def reservation_calendar(request):
         url_format = conf.host_reservation.get("url_format")
         if url_format:
             host_dict["url"] = url_format.format(**host_dict)
+        # Copy these keys if they exist
+        for key in ["authorized_projects", "restricted_reason"]:
+            if key in h:
+                host_dict[key] = h[key]
         return host_dict
 
     hosts_by_id = {h.id: h for h in host_list(request)}
