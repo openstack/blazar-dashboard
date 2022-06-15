@@ -178,6 +178,10 @@
           zoom: { enabled: false, type: 'xy' },
           height: ROW_HEIGHT * resources.length + CHART_TITLE_HEIGHT,
           width: "100%",
+          stroke: {
+            width: 2,
+            curve: 'straight'
+          },
           events: {
             updated: function (chartContext, config) {
               $(`rect.apexcharts-grid-row[fill='${RESTRICTED_BACKGROUND_COLOR}']`).mouseout(function (event) {
@@ -246,6 +250,13 @@
             }
           ]
         },
+        // Free performance
+        animations: {
+          enabled: false
+        },
+        dataLabels: {
+          enabled: false
+        }
       }
       chart = new ApexCharts(document.querySelector(selector), options);
       chart.render();
