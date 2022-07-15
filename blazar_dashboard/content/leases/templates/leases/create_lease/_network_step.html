@@ -10,17 +10,29 @@
 (function (window, horizon, $, undefined) {
     'use strict';
 
+    const toggleVisibility = function(div) {
+      if (div.style.visibility === "hidden") {
+        return "visible";
+      } else {
+        return "hidden";
+      }
+    }
+
     try {
     	document.addEventListener('network_capability_loaded', function() {
     		setResourceTypeInput('network');
     	}, false);
         $('#id_with_network').on('change', function() {
         	setResourceTypeInput('network');
+          const networkWarning = document.getElementById("network-warning");
+          networkWarning.style.visibility = toggleVisibility(networkWarning);
         });
         
         setResourceTypeInput('floatingip');
         $('#id_with_floatingip').on('change', function() {
         	setResourceTypeInput('floatingip');
+          const ipWarning = document.getElementById("ip-warning");
+          ipWarning.style.visibility = toggleVisibility(ipWarning);
         });
       } catch (err) {
         console.error(err);
