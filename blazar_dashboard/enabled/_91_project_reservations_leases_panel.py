@@ -22,6 +22,7 @@ ADD_PANEL = 'blazar_dashboard.content.leases.panel.Leases'
 
 ADD_SCSS_FILES = [
     'leases/scss/calendar.scss',
+    'leases/scss/detail_overview.scss',
     'leases/scss/widgets.scss',
 ]
 

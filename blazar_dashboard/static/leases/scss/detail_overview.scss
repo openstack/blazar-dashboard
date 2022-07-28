@@ -1,0 +1,12 @@
+.lease-detail-host-container {
+  display: flex;
+  align-items: center;
+}
+.lease-detail-host-name {
+  flex: 1;
+  padding-bottom: 1%;
+} .lease-detail-host-name > span:first-child {
+  flex: 1;
+} .lease-detail-host-name > span {
+  display: block;
+}

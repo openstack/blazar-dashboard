@@ -33,4 +33,5 @@ urlpatterns = [
         name='detail'),
     url(LEASE_URL % 'update', leases_views.UpdateView.as_view(),
         name='update'),
+    url(LEASE_URL % 'reallocate', leases_views.ReallocateView.as_view(), name='reallocate'),
 ]

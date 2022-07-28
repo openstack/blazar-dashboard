@@ -12,14 +12,19 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import logging
 
 from django.conf import settings
+from django.template.context_processors import csrf
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
+from horizon import messages
 from horizon import tabs
 
 from blazar_dashboard.api import client
+
+LOG = logging.getLogger(__name__)
 
 RESERVATION_GENERALS = (
     'id',
@@ -60,7 +65,7 @@ class OverviewTab(tabs.Tab):
         if sites:
             site = sites.get(request.session.get('services_region'))
         return {'lease': lease, 'nodes': nodes, 'site': site,
-                'reservation_generals': RESERVATION_GENERALS}
+                'reservation_generals': RESERVATION_GENERALS, **csrf(request)}
 
 
 class LeaseDetailTabs(tabs.TabGroup):

@@ -73,20 +73,40 @@
   <div class="info detail">
     <h4>{% trans "Nodes" %}</h4>
     <hr class="header_rule">
-    <dl class="dl-horizontal">
-      {% for node in nodes %}
-        <dt></dt>
-        <dd>
-        {% if site %}
-          <a href="https://www.chameleoncloud.org/hardware/node/sites/{{ site }}/clusters/chameleon/nodes/{{ node.hypervisor_hostname }}/">
-            {{ node.node_name }} (uid: {{ node.hypervisor_hostname }})
-          </a>
-        {% else %}
-            {{ node.node_name }} (uid: {{ node.hypervisor_hostname }})
-        {% endif %}
-        </dd>
-      {% endfor %}
-    </dl>
+    <form role="form" method="post" action="{% url 'horizon:project:leases:reallocate' lease.id %}">
+      {% csrf_token %}
+      <dl class="dl-horizontal">
+        {% for node in nodes %}
+          <dt></dt>
+            <dd class="lease-detail-host-container" data-display="{{ node.node_name }}">
+              <span class="lease-detail-host-name">
+              {% if site %}
+                <a href="https://www.chameleoncloud.org/hardware/node/sites/{{ site }}/clusters/chameleon/nodes/{{ node.hypervisor_hostname }}/">
+                  {{ node.node_name }} (uid: {{ node.hypervisor_hostname }})
+                </a>
+              {% else %}
+                  {{ node.node_name }} (uid: {{ node.hypervisor_hostname }})
+              {% endif %}
+              <b>
+                (status:
+                {% if node.reservable %}
+                  healthy)
+                {% else %}
+                  unhealthy)
+                {% endif %}
+              </b>
+                <button class="btn btn-danger btn-xs"
+                        type="submit" name="host_reallocate"
+                        help_text="If your node is experiencing issues, please report it to the help desk so it can be fixed."
+                        title="Replace this host with another which has the same resource properties."
+                        value="{{ node.hypervisor_hostname }} {{ lease.id }}">
+                  Re-Allocate Host
+                </button>
+              </span>
+            </dd>
+        {% endfor %}
+      </dl>
+    </form>
   </div>
 {% endif %}
 </div>

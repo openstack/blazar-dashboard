@@ -12,23 +12,29 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import logging
+
 
 from blazar_dashboard import api
+from blazar_dashboard.api import client
 from blazar_dashboard.content.leases import tables as project_tables
 from blazar_dashboard.content.leases import tabs as project_tabs
 from blazar_dashboard.content.leases import workflows as project_workflows
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic import RedirectView
 from horizon import exceptions
-from horizon import forms
+from horizon import messages
 from horizon import tables
 from horizon import tabs
 from horizon import views
 from horizon import workflows
 from horizon.utils import memoized
 
+LOG = logging.getLogger(__name__)
 
 class IndexView(tables.DataTableView):
     table_class = project_tables.LeasesTable
@@ -116,3 +122,39 @@ class UpdateView(workflows.WorkflowView):
             redirect = reverse('horizon:project:leases:index')
             exceptions.handle(self.request, msg, redirect=redirect)
         return lease
+
+class ReallocateView(RedirectView):
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles requests made by buttons
+        """
+        host_reallocate = request.POST.get("host_reallocate")
+        fail_page = reverse("horizon:project:leases:index")
+        if not host_reallocate:
+            LOG.error(f"Received malformed POST: {request.POST}")
+            return redirect(fail_page)
+        try:
+            host_id, lease_id = host_reallocate.split(maxsplit=1)
+            next_url = reverse("horizon:project:leases:detail", args=[lease_id])
+        except Exception:
+            exceptions.handle(
+                request, _("Missing node ID or Lease ID"), redirect=fail_page
+            )
+            return redirect(fail_page)
+
+        try:
+            client.host_reallocate(request, host_id, lease_id)
+        except Exception:
+            exceptions.handle(
+                request, _("Could not reallocate host."), redirect=next_url
+            )
+            return redirect(next_url)
+
+        messages.success(request, f"Reallocated host {host_id}. "
+                                  f"Updates may not appear in lease "
+                                  f"for a few more seconds.")
+
+        return redirect(next_url)
+
+
