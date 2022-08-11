@@ -42,11 +42,18 @@
       ];
       nodeTypesPretty.forEach(function (nt) {
         if (availableResourceTypes[nt[0]]) {
-          chooser.append(new Option(nt[1], nt[0]));
+          chooser.append(
+              new Option(
+                  nt[1],
+                  nt[0],
+                  nt[0] === "compute_skylake",
+                  nt[0] === "compute_skylake" // Set selected
+              )
+          );
           delete availableResourceTypes[nt[0]];
         }
       });
-    }
+    };
   }
   if ($('#blazar-calendar-network').length !== 0) {
     selector = '#blazar-calendar-network'
