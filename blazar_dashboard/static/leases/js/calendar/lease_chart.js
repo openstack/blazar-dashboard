@@ -73,6 +73,16 @@
   var calendarElement = $(selector);
   var projectId; // Used to avoid showing restricted devices if this project is authorized
 
+  function updateFilterHeader(chooser)  {
+    const header = $("#blazar-calendar-filter-header");
+    const value = chooser.value;
+    if (value === undefined || value.toLowerCase() !== "all hosts") {
+        header.textContent = "Showing all hosts";
+    } else {
+        header.textContent = `Showing all ${value} hosts`;
+    }
+  }
+
   function init() {
     var chart; // The chart object
     var allReservations;
@@ -142,12 +152,18 @@
           });
           chooser.empty();
           chooser.append(new Option(`${gettext("All")} ${pluralResourceType}`, '*'));
-          populateChooser(chooser, availableResourceTypes)
+          populateChooser(chooser, availableResourceTypes);
+          if ($("#blazar-calendar-host").length !== 0) {
+            updateFilterHeader(chooser);
+          }
           Object.keys(availableResourceTypes).forEach(function (key) {
             chooser.append(new Option(key, key));
           });
           chooser.prop('disabled', false);
           chooser.change(function () {
+            if ($("#blazar-calendar-host").length !== 0) {
+              updateFilterHeader(chooser);
+            }
             var chosenType = $('#resource-type-chooser').val();
             filteredReservations = allReservations.map(function (reservation) {
               var reservationCopy = Object.assign({}, reservation)
