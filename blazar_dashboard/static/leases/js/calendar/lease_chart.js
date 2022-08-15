@@ -88,6 +88,33 @@
     }
     calendarElement.addClass('loaded');
 
+    const onCalendarFilterChange = function () {
+      const chosenType = $('#resource-type-chooser').val();
+      filteredReservations = allReservations.map(function (reservation) {
+        const reservationCopy = Object.assign({}, reservation);
+        reservationCopy.data = reservation.data.filter(function (resource) {
+          return chosenType === '*' || chosenType === resource[chooserAttr];
+        });
+        return reservationCopy;
+      });
+      currentResources = resources.filter(function (resource) {
+        return chosenType === '*' || chosenType === resource[chooserAttr];
+      });
+      chart.updateOptions({
+        series: filteredReservations,
+        grid: { row: { colors: getGridBackground(currentResources) } },
+        chart: { height: ROW_HEIGHT * currentResources.length + CHART_TITLE_HEIGHT }
+      });
+      setTimeDomain(getTimeDomain());
+
+      const filterHeader = $('#blazar-calendar-filter-header');
+      if (chosenType === '*') {
+        filterHeader.html(`Showing all ${pluralResourceType}`);
+      } else {
+        filterHeader.html(`Showing all ${chosenType} ${pluralResourceType}`);
+      }
+    };
+
     $.getJSON("resources.json")
       .done(function (resp) {
         projectId = resp.project_id;
@@ -147,25 +174,7 @@
             chooser.append(new Option(key, key));
           });
           chooser.prop('disabled', false);
-          chooser.change(function () {
-            var chosenType = $('#resource-type-chooser').val();
-            filteredReservations = allReservations.map(function (reservation) {
-              var reservationCopy = Object.assign({}, reservation)
-              reservationCopy.data = reservation.data.filter(function (resource) {
-                return chosenType === '*' || chosenType === resource[chooserAttr];
-              })
-              return reservationCopy
-            })
-            currentResources = resources.filter(function (resource) {
-              return chosenType === '*' || chosenType === resource[chooserAttr];
-            })
-            chart.updateOptions({
-              series: filteredReservations,
-              grid: { row: { colors: getGridBackground(currentResources) } },
-              chart: { height: ROW_HEIGHT * currentResources.length + CHART_TITLE_HEIGHT }
-            })
-            setTimeDomain(getTimeDomain())
-          });
+          chooser.change(onCalendarFilterChange);
         } else {
           chooser.hide()
         }
@@ -268,6 +277,8 @@
       chart = new ApexCharts(document.querySelector(selector), options);
       chart.render();
       setTimeDomain(timeDomain); // Also sets the yaxis limits
+      // Filter default selection
+      onCalendarFilterChange();
     }
 
     function getGridBackground(resources) {
