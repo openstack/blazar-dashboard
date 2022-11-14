@@ -36,7 +36,8 @@
 
     function setEndDateTime() {
       var startDate = $('#id_start_date').datepicker('getDate');
-      if (startDate == 'Invalid Date') {
+      // if startDate is null, or unspecified, use today
+      if (startDate === 'Invalid Date' || startDate === null) {
         startDate = new Date();
       }
 
