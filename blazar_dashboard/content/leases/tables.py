@@ -12,7 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
+import functools
 from datetime import datetime
 
 import pytz
@@ -25,6 +25,7 @@ from django.utils.translation import ungettext_lazy
 from functools import partial
 from horizon import tables
 from horizon.utils import filters
+from openstack_dashboard import api as horizon_api
 
 
 class CreateLease(tables.LinkAction):
@@ -107,6 +108,7 @@ class DeleteLease(tables.DeleteAction):
 class LeasesTable(tables.DataTable):
     name = tables.Column("name", verbose_name=_("Lease name"),
                          link="horizon:project:leases:detail",)
+    user_id = tables.Column("user_id", verbose_name=_("Created by"))
     start_date = tables.Column("start_date", verbose_name=_("Start date"),
                                filters=(filters.parse_isotime,
                                         partial(django_filters.date,
@@ -136,3 +138,19 @@ class LeasesTable(tables.DataTable):
             table_actions.insert(0, ViewDeviceReservationCalendar)
 
         row_actions = (UpdateLease, DeleteLease, )
+
+    def __init__(self, *args, **kwargs):
+        super(LeasesTable, self).__init__(*args, **kwargs)
+        user_id_column = next((c for c in self.get_columns() if c.name == "user_id"), None)
+        if user_id_column:
+            user_id_column.filters.append(lambda u: self.uid_to_user(u))
+
+    @functools.lru_cache(maxsize=10_000)
+    def uid_to_user(self, uid):
+        if not uid:
+            return None
+        try:
+            user = horizon_api.keystone.user_get(self.request, uid, admin=False)
+            return user.email
+        except Exception:
+            return None
