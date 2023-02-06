@@ -12,7 +12,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import functools
 from datetime import datetime
 
 import pytz
@@ -25,6 +24,7 @@ from django.utils.translation import ungettext_lazy
 from functools import partial
 from horizon import tables
 from horizon.utils import filters
+from horizon.utils.memoized import memoized_method
 from openstack_dashboard import api as horizon_api
 
 
@@ -121,6 +121,7 @@ class LeasesTable(tables.DataTable):
     degraded = tables.Column("degraded", verbose_name=_("Degraded"),
                              filters=(django_filters.yesno,
                                       django_filters.capfirst),)
+    uid_to_user_map = {}
 
     class Meta(object):
         name = "leases"
@@ -145,7 +146,7 @@ class LeasesTable(tables.DataTable):
         if user_id_column:
             user_id_column.filters.append(lambda u: self.uid_to_user(u))
 
-    @functools.lru_cache(maxsize=10_000)
+    @memoized_method(max_size=10_000)
     def uid_to_user(self, uid):
         if not uid:
             return None
