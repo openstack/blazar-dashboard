@@ -152,6 +152,9 @@ class LeasesTable(tables.DataTable):
     def uid_to_user(self, uid):
         if not uid:
             return None
+        # Sometimes, an email gets passed in instead of the uid for some reason...
+        if "@" in uid:
+            return uid
         username = uid_to_username_cache.get(uid)
         if username:
             return username
