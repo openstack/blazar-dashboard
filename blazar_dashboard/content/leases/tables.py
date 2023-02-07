@@ -24,7 +24,7 @@ from django.utils.translation import ungettext_lazy
 from functools import partial
 from horizon import tables
 from horizon.utils import filters
-from horizon.utils.memoized import memoized_method
+from horizon.utils.misc_caches import uid_to_username_cache
 from openstack_dashboard import api as horizon_api
 
 
@@ -146,12 +146,14 @@ class LeasesTable(tables.DataTable):
         if user_id_column:
             user_id_column.filters.append(lambda u: self.uid_to_user(u))
 
-    @memoized_method(max_size=10_000)
     def uid_to_user(self, uid):
         if not uid:
             return None
+        username = uid_to_username_cache.get(uid)
+        if username:
+            return username
         try:
             user = horizon_api.keystone.user_get(self.request, uid, admin=False)
-            return user.email
+            return uid_to_username_cache.setdefault(uid, user.email)
         except Exception:
             return None
