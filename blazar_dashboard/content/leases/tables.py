@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import logging
 from datetime import datetime
 
 import pytz
@@ -26,6 +27,8 @@ from horizon import tables
 from horizon.utils import filters
 from horizon.utils.misc_caches import uid_to_username_cache
 from openstack_dashboard import api as horizon_api
+
+LOG = logging.getLogger(__name__)
 
 
 class CreateLease(tables.LinkAction):
@@ -156,5 +159,6 @@ class LeasesTable(tables.DataTable):
             user = horizon_api.keystone.user_get(self.request, uid, admin=False)
             uid_to_username_cache[uid] = user.email
             return user.email
-        except Exception:
+        except Exception as e:
+            LOG.exception(e)
             return None
