@@ -62,7 +62,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Blazar dashboard Release Notes'
-copyright = '2017, OpenStack Foundation'
+copyright = '2017-2023, OpenStack Foundation'
 
 # Release notes are version independent
 # The full version, including alpha/beta/rc tags.
