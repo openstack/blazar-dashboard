@@ -25,8 +25,6 @@ from django.utils.translation import ungettext_lazy
 from functools import partial
 from horizon import tables
 from horizon.utils import filters
-from horizon.utils.misc_caches import uid_to_username_cache
-from openstack_dashboard import api as horizon_api
 
 LOG = logging.getLogger(__name__)
 
@@ -124,7 +122,6 @@ class LeasesTable(tables.DataTable):
     degraded = tables.Column("degraded", verbose_name=_("Degraded"),
                              filters=(django_filters.yesno,
                                       django_filters.capfirst),)
-    uid_to_user_map = {}
 
     class Meta(object):
         name = "leases"
@@ -142,20 +139,3 @@ class LeasesTable(tables.DataTable):
             table_actions.insert(0, ViewDeviceReservationCalendar)
 
         row_actions = (UpdateLease, DeleteLease, )
-
-    def uid_to_user(self, uid):
-        if not uid:
-            return None
-        # Sometimes, an email gets passed in instead of the uid for some reason...
-        if "@" in uid:
-            return uid
-        username = uid_to_username_cache.get(uid)
-        if username:
-            return username
-        try:
-            user = horizon_api.keystone.user_get(self.request, uid, admin=False)
-            uid_to_username_cache[uid] = user.email
-            return user.email
-        except Exception as e:
-            LOG.exception(e)
-            return None
