@@ -17,8 +17,8 @@ from datetime import datetime
 from functools import partial
 
 from django.template import defaultfilters as django_filters
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import ungettext_lazy
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext_lazy
 from horizon import tables
 from horizon.utils import filters
 import pytz
@@ -64,7 +64,7 @@ class DeleteLease(tables.DeleteAction):
 
     @staticmethod
     def action_present(count):
-        return ungettext_lazy(
+        return ngettext_lazy(
             u"Delete Lease",
             u"Delete Leases",
             count
@@ -72,7 +72,7 @@ class DeleteLease(tables.DeleteAction):
 
     @staticmethod
     def action_past(count):
-        return ungettext_lazy(
+        return ngettext_lazy(
             u"Deleted Lease",
             u"Deleted Leases",
             count
