@@ -19,7 +19,7 @@ from pytz import UTC
 from blazarclient import client as blazar_client
 from collections import OrderedDict
 from django.db import connections
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from horizon import exceptions
 from horizon.utils.memoized import memoized
 import json
