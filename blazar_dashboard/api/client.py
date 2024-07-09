@@ -129,11 +129,10 @@ class Allocation(base.APIDictWrapper):
 
 class ExtraCapability(base.APIDictWrapper):
 
-    _attrs = ['property', 'private', 'capability_values']
+    _attrs = ['property', 'private', 'property_values']
 
     def __init__(self, apiresource):
         super(ExtraCapability, self).__init__(apiresource)
-
 
 @memoized
 def blazarclient(request):
@@ -233,7 +232,7 @@ def host_reallocate(request, host_id, lease_id):
 
 def host_capabilities_list(request):
     extra_capabilities = blazarclient(
-        request).host.list_capabilities(detail=True)
+        request).host.list_properties(detail=True)
     return [ExtraCapability(e) for e in extra_capabilities]
 
 
@@ -251,10 +250,10 @@ def network_allocations_list(request):
 
 def network_capabilities_list(request):
     extra_capabilities = blazarclient(
-        request).network.list_capabilities(detail=True)
+        request).network.list_properties(detail=True)
     extra_capabilities.append({'property': 'physical_network',
                                'private': False,
-                               'capability_values': ['physnet1', 'vlan']})
+                               'property_values': ['physnet1', 'vlan']})
     return [ExtraCapability(e) for e in extra_capabilities]
 
 
@@ -272,7 +271,7 @@ def device_allocations_list(request):
 
 def device_capabilities_list(request):
     extra_capabilities = blazarclient(
-        request).device.list_capabilities(detail=True)
+        request).device.list_properties(detail=True)
     return [ExtraCapability(e) for e in extra_capabilities]
 
 
@@ -479,19 +478,19 @@ def device_reservation_calendar(request):
 
 def computehost_extra_capabilities(request):
     return {
-        x.property: x.capability_values for x
+        x.property: x.property_values for x
         in host_capabilities_list(request)}
 
 
 def network_extra_capabilities(request):
     return {
-        x.property: x.capability_values for x
+        x.property: x.property_values for x
         in network_capabilities_list(request)}
 
 
 def device_extra_capabilities(request):
     return {
-        x.property: x.capability_values for x
+        x.property: x.property_values for x
         in device_capabilities_list(request)}
 
 
