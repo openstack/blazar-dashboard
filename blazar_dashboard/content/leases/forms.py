@@ -17,12 +17,12 @@ import datetime
 import json
 import logging
 import re
+from zoneinfo import ZoneInfo
 
 from django.utils.translation import gettext_lazy as _
 from horizon import exceptions
 from horizon import forms
 from horizon import messages
-from pytz import timezone
 
 from blazar_dashboard import api
 
@@ -213,20 +213,21 @@ class CreateForm(forms.SelfHandlingForm):
 
     def clean(self):
         cleaned_data = super(CreateForm, self).clean()
-        local = timezone(self.request.session.get(
+        local = ZoneInfo(self.request.session.get(
             'django_timezone',
             self.request.COOKIES.get('django_timezone', 'UTC')))
 
         if cleaned_data['start_date']:
-            cleaned_data['start_date'] = local.localize(
-                cleaned_data['start_date'].replace(tzinfo=None)
-            ).astimezone(timezone('UTC'))
+            start = cleaned_data['start_date']
+            start = start.replace(tzinfo=local).astimezone(
+                datetime.timezone.utc)
+            cleaned_data['start_date'] = start
         else:
             cleaned_data['start_date'] = datetime.datetime.utcnow()
         if cleaned_data['end_date']:
-            cleaned_data['end_date'] = local.localize(
-                cleaned_data['end_date'].replace(tzinfo=None)
-            ).astimezone(timezone('UTC'))
+            end = cleaned_data['end_date']
+            end = end.replace(tzinfo=local).astimezone(datetime.timezone.utc)
+            cleaned_data['end_date'] = end
         else:
             cleaned_data['end_date'] = (cleaned_data['start_date'] +
                                         datetime.timedelta(days=1))

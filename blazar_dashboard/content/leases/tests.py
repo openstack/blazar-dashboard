@@ -11,10 +11,10 @@
 #    under the License.
 
 from datetime import datetime
+from datetime import timezone
 from unittest import mock
 
 from django.urls import reverse
-import pytz
 
 from blazar_dashboard import api
 from blazar_dashboard.test import helpers as test
@@ -92,8 +92,8 @@ class LeasesTests(test.TestCase):
 
     @mock.patch.object(api.client, 'lease_create')
     def test_create_lease_host_reservation(self, lease_create):
-        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
-        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=timezone.utc)
+        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=timezone.utc)
         new_lease = self.leases.get(name='lease-1')
         form_data = {
             'name': 'lease-1',
@@ -129,8 +129,8 @@ class LeasesTests(test.TestCase):
 
     @mock.patch.object(api.client, 'lease_create')
     def test_create_lease_instance_reservation(self, lease_create):
-        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
-        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=timezone.utc)
+        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=timezone.utc)
         dummy_lease = {}
         form_data = {
             'name': 'lease-1',
@@ -171,8 +171,8 @@ class LeasesTests(test.TestCase):
 
     @mock.patch.object(api.client, 'lease_create')
     def test_create_lease_client_error(self, lease_create):
-        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=pytz.utc)
-        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=pytz.utc)
+        start_date = datetime(2030, 6, 27, 18, 0, tzinfo=timezone.utc)
+        end_date = datetime(2030, 6, 30, 18, 0, tzinfo=timezone.utc)
         form_data = {
             'name': 'lease-1',
             'start_date': start_date.strftime('%Y-%m-%d %H:%M'),

@@ -14,6 +14,7 @@
 #    under the License.
 
 from datetime import datetime
+from datetime import timezone
 from functools import partial
 
 from django.template import defaultfilters as django_filters
@@ -21,7 +22,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
 from horizon import tables
 from horizon.utils import filters
-import pytz
 
 from blazar_dashboard import api
 from blazar_dashboard import conf
@@ -43,7 +43,7 @@ class UpdateLease(tables.LinkAction):
 
     def allowed(self, request, lease):
         if datetime.strptime(lease.end_date, '%Y-%m-%dT%H:%M:%S.%f').\
-                replace(tzinfo=pytz.utc) > datetime.now(pytz.utc):
+                replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
             return True
         return False
 

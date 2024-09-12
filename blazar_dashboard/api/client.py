@@ -11,10 +11,10 @@
 #    under the License.
 
 from datetime import datetime
+from datetime import timezone
 from itertools import chain
 import json
 import logging
-from pytz import UTC
 
 from blazar_dashboard import conf
 from django.conf import settings
@@ -209,4 +209,4 @@ def _parse_api_datestr(datestr):
 
     dateobj = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S.%f")
 
-    return dateobj.replace(tzinfo=UTC)
+    return dateobj.replace(tzinfo=timezone.utc)
