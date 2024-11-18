@@ -223,7 +223,8 @@ class CreateForm(forms.SelfHandlingForm):
                 datetime.timezone.utc)
             cleaned_data['start_date'] = start
         else:
-            cleaned_data['start_date'] = datetime.datetime.utcnow()
+            cleaned_data['start_date'] = datetime.datetime.now(
+                datetime.timezone.utc).replace(tzinfo=None)
         if cleaned_data['end_date']:
             end = cleaned_data['end_date']
             end = end.replace(tzinfo=local).astimezone(datetime.timezone.utc)
