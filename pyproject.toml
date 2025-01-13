@@ -1,0 +1,28 @@
+[build-system]
+requires = ["pbr>=6.0.0", "setuptools>=64.0.0"]
+build-backend = "pbr.build"
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = [
+    "E",        # pycodestyle (error)
+    "F",        # pyflakes
+    "G",        # flake8-logging-format
+    "LOG",      # flake8-logging
+]
+
+
+ignore = [
+    "E501", # line too long
+    "G002", # Logging statement uses `%`
+    "G004", # logging statement uses f-string
+    "E741", # Ambiguous variable name
+    "F401", # imported but unused
+]
+
+[tool.ruff.lint.per-file-ignores]
+"blazar_dashboard/test/settings.py" = [
+    "F405", #HORIZON_CONFIG` may be undefined, or defined from star imports
+]
