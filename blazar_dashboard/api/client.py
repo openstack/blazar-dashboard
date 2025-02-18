@@ -97,7 +97,7 @@ def blazarclient(request):
 def lease_list(request):
     """List the leases."""
     leases = blazarclient(request).lease.list()
-    return [Lease(l) for l in leases]
+    return [Lease(lease) for lease in leases]
 
 
 def lease_get(request, lease_id):
