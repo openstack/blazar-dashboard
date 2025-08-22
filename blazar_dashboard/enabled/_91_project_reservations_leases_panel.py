@@ -26,5 +26,5 @@ ADD_SCSS_FILES = [
 
 ADD_JS_FILES = [
     'leases/js/calendar/lease_chart.js',
-    'leases/js/vendor/apexcharts.min.js',
+    'leases/js/vendor/apexcharts.js',
 ]
