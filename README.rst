@@ -1,15 +1,10 @@
-========================
-Team and repository tags
-========================
-
-.. image:: https://governance.openstack.org/tc/badges/blazar-dashboard.svg
-    :target: https://governance.openstack.org/tc/reference/tags/index.html
-
-.. Change things from this point on
-
 ================
 Blazar dashboard
 ================
+
+.. image:: https://governance.openstack.org/tc/badges/blazar-dashboard.svg
+
+.. Change things from this point on
 
 Horizon plugin for the Blazar Reservation Service for OpenStack
 
