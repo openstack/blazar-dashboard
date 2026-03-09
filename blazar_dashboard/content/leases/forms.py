@@ -112,15 +112,15 @@ class CreateForm(forms.SelfHandlingForm):
             'data-source-instance': _('Instance Count')})
     )
     vcpus = forms.IntegerField(
-        label=_('Number of VCPUs'),
+        label=_('Number of vCPUs'),
         required=False,
-        help_text=_('Enter the number of VCPUs per instance.'),
+        help_text=_('Enter the number of vCPUs per instance.'),
         min_value=1,
         initial=1,
         widget=forms.NumberInput(attrs={
             'class': 'switched',
             'data-switch-on': 'source',
-            'data-source-instance': _('Number of VCPUs')})
+            'data-source-instance': _('Number of vCPUs')})
     )
     memory_mb = forms.IntegerField(
         label=_('RAM (MB)'),

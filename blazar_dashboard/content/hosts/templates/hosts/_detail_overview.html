@@ -22,7 +22,7 @@
     <h4>{% trans "CPU Specs" %}</h4>
     <hr class="header_rule">
     <dl class="dl-horizontal">
-      <dt>{% trans "VCPUs" %}</dt>
+      <dt>{% trans "vCPUs" %}</dt>
       <dd>{{ host.vcpus|default:_("None") }}</dd>
       {% for key, value in host.cpu_info_dict.items %}
         <dt>{{ key }}</dt>

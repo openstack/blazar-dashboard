@@ -63,7 +63,7 @@ class DeleteHost(tables.DeleteAction):
 class HostsTable(tables.DataTable):
     name = tables.Column("hypervisor_hostname", verbose_name=_("Host name"),
                          link="horizon:admin:hosts:detail")
-    vcpus = tables.Column("vcpus", verbose_name=_("VCPUs"))
+    vcpus = tables.Column("vcpus", verbose_name=_("vCPUs"))
     memory_mb = tables.Column("memory_mb", verbose_name=_("RAM"),
                               filters=(sizeformat.mb_float_format,))
     local_gb = tables.Column("local_gb", verbose_name=_("Local Storage"),
