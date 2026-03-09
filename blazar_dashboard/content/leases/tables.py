@@ -65,16 +65,16 @@ class DeleteLease(tables.DeleteAction):
     @staticmethod
     def action_present(count):
         return ngettext_lazy(
-            u"Delete Lease",
-            u"Delete Leases",
+            "Delete Lease",
+            "Delete Leases",
             count
         )
 
     @staticmethod
     def action_past(count):
         return ngettext_lazy(
-            u"Deleted Lease",
-            u"Deleted Leases",
+            "Deleted Lease",
+            "Deleted Leases",
             count
         )
 

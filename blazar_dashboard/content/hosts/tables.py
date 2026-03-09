@@ -43,16 +43,16 @@ class DeleteHost(tables.DeleteAction):
     @staticmethod
     def action_present(count):
         return ngettext_lazy(
-            u"Delete Host",
-            u"Delete Hosts",
+            "Delete Host",
+            "Delete Hosts",
             count
         )
 
     @staticmethod
     def action_past(count):
         return ngettext_lazy(
-            u"Deleted Host",
-            u"Deleted Hosts",
+            "Deleted Host",
+            "Deleted Hosts",
             count
         )
 
