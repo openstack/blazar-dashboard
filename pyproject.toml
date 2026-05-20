@@ -31,5 +31,7 @@ classifiers = [
 Homepage = "https://docs.openstack.org/blazar-dashboard/latest/"
 Repository = "https://opendev.org/openstack/blazar-dashboard"
 
-[tool.setuptools.packages.find]
-include = ["blazar_dashboard"]
+[tool.setuptools]
+packages = [
+    "blazar_dashboard"
+]
