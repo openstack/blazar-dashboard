@@ -13,7 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from datetime import datetime
+import datetime
+
 from datetime import timezone
 from functools import partial
 
@@ -42,7 +43,7 @@ class UpdateLease(tables.LinkAction):
     classes = ("btn-create", "ajax-modal")
 
     def allowed(self, request, lease):
-        if datetime.strptime(lease.end_date, '%Y-%m-%dT%H:%M:%S.%f').\
+        if datetime.datetime.strptime(lease.end_date, '%Y-%m-%dT%H:%M:%S.%f').\
                 replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
             return True
         return False

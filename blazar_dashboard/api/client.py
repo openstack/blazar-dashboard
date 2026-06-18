@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from datetime import datetime
+import datetime
 from datetime import timezone
 from itertools import chain
 import json
@@ -207,6 +207,6 @@ def _parse_api_datestr(datestr):
     if datestr is None:
         return datestr
 
-    dateobj = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S.%f")
+    dateobj = datetime.datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S.%f")
 
     return dateobj.replace(tzinfo=timezone.utc)
